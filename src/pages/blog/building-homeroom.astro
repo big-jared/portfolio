@@ -50,6 +50,8 @@
 					<h2>Introduction</h2>
 					<p>Homeroom started as a personal project to help students manage their academic life more effectively. What began as a simple assignment tracker evolved into a full-featured education management platform supporting Android, iOS, and Desktop. In this post, I'll share the technical decisions and architecture that make Homeroom work across all these platforms.</p>
 
+					<img src="/blog/assignments.png" alt="Homeroom assignments view" class="blog-image" />
+
 					<h2>The Multi-App Architecture</h2>
 					<p>One of the interesting aspects of Homeroom is that it's actually two apps sharing the same codebase:</p>
 					<ul>
@@ -89,24 +91,28 @@
 					</ul>
 
 					<h2>AI Integrations</h2>
-					<p>One of the most powerful features of Homeroom is its AI integration using GPT-4o mini. We chose GPT-4o mini for several key reasons:</p>
+					<p>One of the most powerful features of Homeroom is its AI integration using GPT-4.1 mini. We chose GPT-4.1 mini after extensive testing and comparison with GPT-5.0:</p>
 					<ul>
-						<li><strong>Cost efficiency</strong>: Significantly cheaper than GPT-4, allowing us to offer AI features at scale</li>
+						<li><strong>Cost efficiency</strong>: Dramatically cheaper than GPT-5.0, allowing us to offer AI features at scale without breaking the bank</li>
+						<li><strong>Strong performance</strong>: Our testing showed GPT-4.1 mini performs remarkably well for student-focused interactions, with only marginal differences compared to GPT-5.0 for our use cases</li>
 						<li><strong>Terms of Service</strong>: OpenAI's TOS supports users 13+, perfect for our student demographic</li>
 						<li><strong>KMP Support</strong>: Existing Kotlin Multiplatform libraries made integration straightforward</li>
 					</ul>
 
-					<p>The <code>AiManager</code> provides a clean interface for AI interactions, with a comprehensive set of tools that the AI can invoke:</p>
+					<p>The <code>AiManager</code> provides a clean interface for AI interactions, with a comprehensive set of tools that the AI can invoke. These tools give the AI direct access to the student's data and allow it to perform actions on their behalf:</p>
 					<ul>
-						<li><strong>Assignment Tools</strong>: Create, update, and manage assignments directly through natural language</li>
-						<li><strong>Study Guide Generation</strong>: Generate personalized study guides based on course material and past performance</li>
-						<li><strong>Grade Analysis</strong>: Analyze grade trends and provide actionable insights</li>
-						<li><strong>Course Planning</strong>: Help students plan their course schedules and manage workload</li>
-						<li><strong>Smart Reminders</strong>: Set intelligent reminders based on due dates and student work patterns</li>
-						<li><strong>Concept Explanations</strong>: Provide detailed explanations of complex topics tailored to the student's level</li>
+						<li><strong>Assignment Management</strong>: <code>add_assignment</code>, <code>update_assignment</code>, <code>get_assignments</code> - Create, modify, and query assignments</li>
+						<li><strong>Course Management</strong>: <code>add_course</code>, <code>update_course</code>, <code>get_courses</code>, <code>set_syllabus</code> - Manage courses and grading schemes</li>
+						<li><strong>Grade Tracking</strong>: <code>get_grade</code>, <code>get_grades</code>, <code>get_gpa</code> - Query current grades and GPA</li>
+						<li><strong>Study Planning</strong>: <code>add_study_event</code>, <code>get_study_events</code> - Create and manage study sessions</li>
+						<li><strong>Term Management</strong>: <code>add_term</code>, <code>get_term</code> - Configure academic terms</li>
+						<li><strong>Context Awareness</strong>: <code>get_current_time</code>, <code>get_student_info</code> - Access temporal and user context</li>
+						<li><strong>User Feedback</strong>: <code>display_status</code> - Show status messages about multi-step operations</li>
 					</ul>
 
-					<p>All AI interactions are stateful, maintaining context across conversations to provide a more natural tutoring experience.</p>
+					<p>Chats are saved locally with conversation summaries, allowing students to resume conversations seamlessly. This provides continuity in the tutoring experience while keeping costs manageable.</p>
+
+					<img src="/blog/ai-chat.png" alt="AI chat interface" class="blog-image" />
 
 					<h2>Desktop Support</h2>
 					<p>Adding Desktop support was one of the more interesting challenges. While Compose Multiplatform makes UI sharing straightforward, Desktop apps have different expectations:</p>
@@ -116,6 +122,8 @@
 						<li>Different authentication flows (no native Google Sign-In)</li>
 						<li>File system access patterns</li>
 					</ul>
+
+					<img src="/blog/desktop-screenshot.png" alt="Homeroom desktop application" class="blog-image" />
 
 					<h2>The Homeschool Variant</h2>
 					<p>The homeschool app extends the student app with parent-specific features:</p>
@@ -155,9 +163,9 @@
 					</ul>
 
 					<h2>Conclusion</h2>
-					<p>Building Homeroom has been an incredible journey into the world of Kotlin Multiplatform and Compose. The ability to share business logic while maintaining platform-specific polish is powerful, and the ecosystem is maturing rapidly.</p>
+					<p>Building Homeroom has been an incredible journey into the world of Compose Multiplatform. The ability to share business logic while maintaining platform-specific polish is powerful, and the ecosystem is maturing rapidly.</p>
 
-					<p>If you're considering Kotlin Multiplatform for your next project, I'd highly recommend it. The initial learning curve is worth it for the long-term benefits of code sharing and unified business logic.</p>
+					<p>If you're considering Compose Multiplatform for your next project, I'd highly recommend it. The initial learning curve is worth it for the long-term benefits of code sharing and unified business logic.</p>
 
 					<p>You can check out Homeroom at <a href="https://thehomeroom.app" target="_blank">thehomeroom.app</a>, and feel free to reach out if you have questions about the technical implementation!</p>
 				</div>
@@ -336,6 +344,17 @@
 
 			.post-content a:hover {
 				text-decoration: underline;
+			}
+
+			.blog-image {
+				width: 100%;
+				max-width: 700px;
+				height: auto;
+				border-radius: 0.5rem;
+				margin: 2rem auto;
+				display: block;
+				box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+				border: 1px solid var(--border);
 			}
 
 			.post-footer {
