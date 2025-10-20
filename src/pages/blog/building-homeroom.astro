@@ -91,10 +91,10 @@
 					</ul>
 
 					<h2>AI Integrations</h2>
-					<p>One of the most powerful features of Homeroom is its AI integration using GPT-4.1 mini. We chose GPT-4.1 mini after extensive testing and comparison with GPT-5.0:</p>
+					<p>One of the most powerful features of Homeroom is its AI integration using GPT-4.1 mini. We chose GPT-4.1 mini after extensive testing and comparison with many GPT models:</p>
 					<ul>
-						<li><strong>Cost efficiency</strong>: Dramatically cheaper than GPT-5.0, allowing us to offer AI features at scale without breaking the bank</li>
-						<li><strong>Strong performance</strong>: Our testing showed GPT-4.1 mini performs remarkably well for student-focused interactions, with only marginal differences compared to GPT-5.0 for our use cases</li>
+						<li><strong>Cost efficiency</strong>: Dramatically cheaper than larger models, allowing us to offer AI features at scale without breaking the bank</li>
+						<li><strong>Strong performance</strong>: Our testing showed GPT-4.1 mini performs remarkably well for student-focused interactions, with only marginal differences compared to larger models for our use cases</li>
 						<li><strong>Terms of Service</strong>: OpenAI's TOS supports users 13+, perfect for our student demographic</li>
 						<li><strong>KMP Support</strong>: Existing Kotlin Multiplatform libraries made integration straightforward</li>
 					</ul>
@@ -126,7 +126,7 @@
 
 					<p>The whole process didn't take long, and the fact that 95%+ of our code just worked on desktop is a testament to Compose Multiplatform's maturity.</p>
 
-					<img src="/blog/desktop-screenshot.png" alt="Homeroom desktop application" class="blog-image" />
+					<img src="/blog/desktop-screenshot.png" alt="Homeroom desktop application" class="blog-image desktop-image" />
 
 					<h2>The Homeschool Variant</h2>
 					<p>The homeschool app extends the student app with parent-specific features:</p>
@@ -358,6 +358,10 @@
 				display: block;
 				box-shadow: 0 4px 20px rgba(0,0,0,0.1);
 				border: 1px solid var(--border);
+			}
+
+			.desktop-image {
+				max-width: 700px;
 			}
 
 			.post-footer {
