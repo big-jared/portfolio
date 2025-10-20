@@ -71,7 +71,7 @@
 					<h2>Shared Business Logic</h2>
 					<p>The core strength of our architecture is the shared module that contains all business logic, data models, and repositories. This means features like assignment tracking, grade calculations, and course management are written once and work identically across all platforms.</p>
 
-					<p>The repository pattern provides a clean abstraction:</p>
+					<p>The repository pattern provides a clean abstraction, with Kotlin Flows hosted in repository services that make every screen truly reactive. Data changes propagate automatically through the UI layer:</p>
 					<ul>
 						<li><code>AssignmentRepository</code> - CRUD operations for assignments with student-specific filtering</li>
 						<li><code>CourseRepository</code> - Course and term management</li>
@@ -88,17 +88,25 @@
 						<li><strong>Push Notifications</strong>: Firebase Cloud Messaging integration</li>
 					</ul>
 
-					<h2>Google Classroom Integration</h2>
-					<p>One of Homeroom's key features is seamless Google Classroom integration. Students can sync their assignments, due dates, and course information directly from Google Classroom. This required:</p>
+					<h2>AI Integrations</h2>
+					<p>One of the most powerful features of Homeroom is its AI integration using GPT-4o mini. We chose GPT-4o mini for several key reasons:</p>
 					<ul>
-						<li>Platform-specific OAuth implementations</li>
-						<li>A <code>ClassroomSyncManager</code> to handle periodic syncing</li>
-						<li>Conflict resolution between local and remote data</li>
-						<li>Efficient caching to minimize API calls</li>
+						<li><strong>Cost efficiency</strong>: Significantly cheaper than GPT-4, allowing us to offer AI features at scale</li>
+						<li><strong>Terms of Service</strong>: OpenAI's TOS supports users 13+, perfect for our student demographic</li>
+						<li><strong>KMP Support</strong>: Existing Kotlin Multiplatform libraries made integration straightforward</li>
 					</ul>
 
-					<h2>AI-Powered Study Guides</h2>
-					<p>Using Firebase AI, Homeroom can generate personalized study guides and provide intelligent tutoring. The <code>AiManager</code> provides a clean interface for AI interactions while keeping the implementation details abstracted from the UI layer.</p>
+					<p>The <code>AiManager</code> provides a clean interface for AI interactions, with a comprehensive set of tools that the AI can invoke:</p>
+					<ul>
+						<li><strong>Assignment Tools</strong>: Create, update, and manage assignments directly through natural language</li>
+						<li><strong>Study Guide Generation</strong>: Generate personalized study guides based on course material and past performance</li>
+						<li><strong>Grade Analysis</strong>: Analyze grade trends and provide actionable insights</li>
+						<li><strong>Course Planning</strong>: Help students plan their course schedules and manage workload</li>
+						<li><strong>Smart Reminders</strong>: Set intelligent reminders based on due dates and student work patterns</li>
+						<li><strong>Concept Explanations</strong>: Provide detailed explanations of complex topics tailored to the student's level</li>
+					</ul>
+
+					<p>All AI interactions are stateful, maintaining context across conversations to provide a more natural tutoring experience.</p>
 
 					<h2>Desktop Support</h2>
 					<p>Adding Desktop support was one of the more interesting challenges. While Compose Multiplatform makes UI sharing straightforward, Desktop apps have different expectations:</p>
@@ -139,10 +147,11 @@
 					<h2>What's Next</h2>
 					<p>Homeroom continues to evolve with new features in the pipeline:</p>
 					<ul>
-						<li>Web version using Compose for Web</li>
-						<li>Enhanced AI features for personalized learning recommendations</li>
-						<li>Collaborative study groups and peer learning</li>
-						<li>Advanced analytics and progress tracking</li>
+						<li><strong>Desktop Release</strong>: Polishing and releasing the desktop application for Windows, macOS, and Linux</li>
+						<li><strong>Homeschool App Completion</strong>: Finishing the remaining features for the parent-focused homeschool variant</li>
+						<li><strong>Web Version</strong>: Using the WASM target of Kotlin Multiplatform to bring Homeroom to the web</li>
+						<li><strong>Live Course Screen</strong>: Real-time note-taking with active concept tracking during class</li>
+						<li><strong>LMS Platform Integrations</strong>: Integration with Canvas, Blackboard, and other learning management systems</li>
 					</ul>
 
 					<h2>Conclusion</h2>
