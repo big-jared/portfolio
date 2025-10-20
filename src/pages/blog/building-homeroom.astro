@@ -1,0 +1,363 @@
+---
+---
+
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/png" href="/favicon.png" />
+		<meta name="viewport" content="width=device-width" />
+		<title>Building Homeroom | Jared Guttromson</title>
+		<meta name="description" content="Technical deep dive into building Homeroom, a Compose Multiplatform education platform for students and homeschoolers" />
+
+		<!-- Fonts -->
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+	</head>
+	<body>
+		<nav>
+			<div class="nav-container">
+				<a href="/" class="logo">
+					<img src="/profile.png" alt="JG" class="logo-img" />
+				</a>
+				<ul class="nav-links">
+					<li><a href="/#experience">Experience</a></li>
+					<li><a href="/#projects">Projects</a></li>
+					<li><a href="/blog">Blog</a></li>
+					<li><a href="/#contact">Contact</a></li>
+				</ul>
+			</div>
+		</nav>
+
+		<article class="blog-post">
+			<div class="container">
+				<header class="post-header">
+					<div class="post-meta">
+						<time datetime="2025-10-20">October 20, 2025</time>
+						<span class="read-time">8 min read</span>
+					</div>
+					<h1>Building Homeroom: A Compose Multiplatform Education Platform</h1>
+					<p class="subtitle">An introduction to the technical architecture and implementation details of Homeroom, a student organization app built with Kotlin Multiplatform and Compose.</p>
+					<div class="tags">
+						<span class="tag">Kotlin Multiplatform</span>
+						<span class="tag">Compose</span>
+						<span class="tag">Firebase</span>
+						<span class="tag">SQLDelight</span>
+					</div>
+				</header>
+
+				<div class="post-content">
+					<h2>Introduction</h2>
+					<p>Homeroom started as a personal project to help students manage their academic life more effectively. What began as a simple assignment tracker evolved into a full-featured education management platform supporting Android, iOS, and Desktop. In this post, I'll share the technical decisions and architecture that make Homeroom work across all these platforms.</p>
+
+					<h2>The Multi-App Architecture</h2>
+					<p>One of the interesting aspects of Homeroom is that it's actually two apps sharing the same codebase:</p>
+					<ul>
+						<li><strong>Student App</strong>: Individual student-focused app for tracking personal assignments, grades, and analytics</li>
+						<li><strong>Homeschool App</strong>: Parent-centric app for managing multiple students in a homeschooling context</li>
+					</ul>
+					<p>Both apps are built on Kotlin Multiplatform, sharing business logic while maintaining distinct user experiences and features tailored to their respective audiences.</p>
+
+					<h2>Technology Stack</h2>
+					<p>The foundation of Homeroom is built on modern mobile development tools:</p>
+					<ul>
+						<li><strong>Compose Multiplatform</strong> for UI across Android, iOS, and Desktop</li>
+						<li><strong>SQLDelight</strong> for type-safe local database operations</li>
+						<li><strong>Ktor Client</strong> for networking and API calls</li>
+						<li><strong>Firebase</strong> for authentication, analytics, and cloud storage</li>
+						<li><strong>Koin</strong> for dependency injection</li>
+					</ul>
+
+					<h2>Shared Business Logic</h2>
+					<p>The core strength of our architecture is the shared module that contains all business logic, data models, and repositories. This means features like assignment tracking, grade calculations, and course management are written once and work identically across all platforms.</p>
+
+					<p>The repository pattern provides a clean abstraction:</p>
+					<ul>
+						<li><code>AssignmentRepository</code> - CRUD operations for assignments with student-specific filtering</li>
+						<li><code>CourseRepository</code> - Course and term management</li>
+						<li><code>AuthRepository</code> - User authentication with UserType support (Student/Parent)</li>
+						<li><code>ParentRepository</code> - Parent management and student relationships (homeschool app)</li>
+					</ul>
+
+					<h2>Platform-Specific Implementations</h2>
+					<p>While the business logic is shared, each platform has its own specific requirements. Kotlin Multiplatform's expect/actual mechanism allows us to define interfaces in common code and implement them per platform:</p>
+					<ul>
+						<li><strong>Storage</strong>: SQLite on mobile, different driver configuration for Desktop</li>
+						<li><strong>Authentication</strong>: Platform-specific Google Sign-In flows</li>
+						<li><strong>File System</strong>: Different file handling for mobile vs desktop</li>
+						<li><strong>Push Notifications</strong>: Firebase Cloud Messaging integration</li>
+					</ul>
+
+					<h2>Google Classroom Integration</h2>
+					<p>One of Homeroom's key features is seamless Google Classroom integration. Students can sync their assignments, due dates, and course information directly from Google Classroom. This required:</p>
+					<ul>
+						<li>Platform-specific OAuth implementations</li>
+						<li>A <code>ClassroomSyncManager</code> to handle periodic syncing</li>
+						<li>Conflict resolution between local and remote data</li>
+						<li>Efficient caching to minimize API calls</li>
+					</ul>
+
+					<h2>AI-Powered Study Guides</h2>
+					<p>Using Firebase AI, Homeroom can generate personalized study guides and provide intelligent tutoring. The <code>AiManager</code> provides a clean interface for AI interactions while keeping the implementation details abstracted from the UI layer.</p>
+
+					<h2>Desktop Support</h2>
+					<p>Adding Desktop support was one of the more interesting challenges. While Compose Multiplatform makes UI sharing straightforward, Desktop apps have different expectations:</p>
+					<ul>
+						<li>Window management and multi-window support</li>
+						<li>Keyboard shortcuts and accessibility</li>
+						<li>Different authentication flows (no native Google Sign-In)</li>
+						<li>File system access patterns</li>
+					</ul>
+
+					<h2>The Homeschool Variant</h2>
+					<p>The homeschool app extends the student app with parent-specific features:</p>
+					<ul>
+						<li><strong>Multi-student management</strong>: Parents can manage multiple students with a single account</li>
+						<li><strong>Family dashboard</strong>: Overview of all students' progress and upcoming assignments</li>
+						<li><strong>Student switching</strong>: Seamless context switching between different students</li>
+						<li><strong>Parallel data loading</strong>: <code>HomeschoolAppInitializer</code> loads data for all students in parallel for smooth transitions</li>
+					</ul>
+
+					<h2>Testing Strategy</h2>
+					<p>Testing a multiplatform app requires a comprehensive strategy:</p>
+					<ul>
+						<li><strong>Shared logic tests</strong> run on all platforms automatically</li>
+						<li><strong>Repository tests</strong> use in-memory databases for fast execution</li>
+						<li><strong>ViewModel tests</strong> verify business logic without UI dependencies</li>
+						<li><strong>Platform-specific tests</strong> cover actual implementations</li>
+					</ul>
+
+					<h2>Lessons Learned</h2>
+					<p>Building Homeroom taught me several valuable lessons:</p>
+					<ul>
+						<li><strong>Start with the shared module</strong>: Define your business logic first, then build platform-specific UI</li>
+						<li><strong>Invest in architecture</strong>: The repository pattern and clean separation of concerns pays dividends as the codebase grows</li>
+						<li><strong>Platform differences matter</strong>: Even with shared code, respect platform conventions and user expectations</li>
+						<li><strong>Code sharing isn't all-or-nothing</strong>: It's okay to have platform-specific implementations when it makes sense</li>
+					</ul>
+
+					<h2>What's Next</h2>
+					<p>Homeroom continues to evolve with new features in the pipeline:</p>
+					<ul>
+						<li>Web version using Compose for Web</li>
+						<li>Enhanced AI features for personalized learning recommendations</li>
+						<li>Collaborative study groups and peer learning</li>
+						<li>Advanced analytics and progress tracking</li>
+					</ul>
+
+					<h2>Conclusion</h2>
+					<p>Building Homeroom has been an incredible journey into the world of Kotlin Multiplatform and Compose. The ability to share business logic while maintaining platform-specific polish is powerful, and the ecosystem is maturing rapidly.</p>
+
+					<p>If you're considering Kotlin Multiplatform for your next project, I'd highly recommend it. The initial learning curve is worth it for the long-term benefits of code sharing and unified business logic.</p>
+
+					<p>You can check out Homeroom at <a href="https://thehomeroom.app" target="_blank">thehomeroom.app</a>, and feel free to reach out if you have questions about the technical implementation!</p>
+				</div>
+
+				<footer class="post-footer">
+					<a href="/blog" class="back-link">← Back to Blog</a>
+				</footer>
+			</div>
+		</article>
+
+		<style>
+			* {
+				margin: 0;
+				padding: 0;
+				box-sizing: border-box;
+			}
+
+			:root {
+				--primary: #2563eb;
+				--primary-dark: #1e40af;
+				--text: #1e293b;
+				--text-light: #64748b;
+				--bg: #ffffff;
+				--bg-secondary: #f8fafc;
+				--border: #e2e8f0;
+			}
+
+			body {
+				font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+				line-height: 1.6;
+				color: var(--text);
+				background: var(--bg);
+			}
+
+			.container {
+				max-width: 800px;
+				margin: 0 auto;
+				padding: 0 2rem;
+			}
+
+			nav {
+				position: sticky;
+				top: 0;
+				background: rgba(255, 255, 255, 0.9);
+				backdrop-filter: blur(10px);
+				border-bottom: 1px solid var(--border);
+				z-index: 100;
+			}
+
+			.nav-container {
+				max-width: 1100px;
+				margin: 0 auto;
+				padding: 1.5rem 2rem;
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+			}
+
+			.logo {
+				display: flex;
+				align-items: center;
+				text-decoration: none;
+			}
+
+			.logo-img {
+				width: 40px;
+				height: 40px;
+				border-radius: 50%;
+				object-fit: cover;
+			}
+
+			.nav-links {
+				display: flex;
+				list-style: none;
+				gap: 2rem;
+			}
+
+			.nav-links a {
+				color: var(--text);
+				text-decoration: none;
+				font-weight: 500;
+				transition: color 0.3s;
+			}
+
+			.nav-links a:hover {
+				color: var(--primary);
+			}
+
+			.blog-post {
+				padding: 3rem 0;
+			}
+
+			.post-header {
+				margin-bottom: 3rem;
+				padding-bottom: 2rem;
+				border-bottom: 1px solid var(--border);
+			}
+
+			.post-meta {
+				display: flex;
+				gap: 1rem;
+				margin-bottom: 1rem;
+				font-size: 0.9rem;
+				color: var(--text-light);
+			}
+
+			.post-header h1 {
+				font-size: 2.5rem;
+				font-weight: 800;
+				margin-bottom: 1rem;
+				line-height: 1.2;
+			}
+
+			.subtitle {
+				font-size: 1.1rem;
+				color: var(--text-light);
+				margin-bottom: 1.5rem;
+				line-height: 1.7;
+			}
+
+			.tags {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.5rem;
+			}
+
+			.tag {
+				background: var(--bg-secondary);
+				color: var(--text);
+				padding: 0.25rem 0.75rem;
+				border-radius: 1rem;
+				font-size: 0.85rem;
+				border: 1px solid var(--border);
+			}
+
+			.post-content {
+				font-size: 1.1rem;
+				line-height: 1.8;
+			}
+
+			.post-content h2 {
+				font-size: 1.75rem;
+				font-weight: 700;
+				margin: 2.5rem 0 1rem;
+			}
+
+			.post-content h2:first-child {
+				margin-top: 0;
+			}
+
+			.post-content p {
+				margin-bottom: 1.5rem;
+			}
+
+			.post-content ul {
+				margin: 1.5rem 0;
+				padding-left: 2rem;
+			}
+
+			.post-content li {
+				margin-bottom: 0.75rem;
+			}
+
+			.post-content code {
+				background: var(--bg-secondary);
+				padding: 0.2rem 0.4rem;
+				border-radius: 0.25rem;
+				font-family: 'Courier New', monospace;
+				font-size: 0.9em;
+			}
+
+			.post-content a {
+				color: var(--primary);
+				text-decoration: none;
+			}
+
+			.post-content a:hover {
+				text-decoration: underline;
+			}
+
+			.post-footer {
+				margin-top: 4rem;
+				padding-top: 2rem;
+				border-top: 1px solid var(--border);
+			}
+
+			.back-link {
+				color: var(--primary);
+				text-decoration: none;
+				font-weight: 500;
+			}
+
+			.back-link:hover {
+				text-decoration: underline;
+			}
+
+			@media (max-width: 768px) {
+				.post-header h1 {
+					font-size: 2rem;
+				}
+
+				.post-content {
+					font-size: 1rem;
+				}
+
+				.post-content h2 {
+					font-size: 1.5rem;
+				}
+			}
+		</style>
+	</body>
+</html>

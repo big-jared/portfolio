@@ -4,7 +4,7 @@
 <html lang="en">
 	<head>
 		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="icon" type="image/png" href="/favicon.png" />
 		<meta name="viewport" content="width=device-width" />
 		<meta name="generator" content={Astro.generator} />
 		<meta name="description" content="Jared Guttromson - Senior Software Engineer specializing in Android and Kotlin Multiplatform development. Previously at Intuit and Shopify." />
@@ -28,11 +28,13 @@
 	<body>
 		<nav>
 			<div class="nav-container">
-				<a href="#" class="logo">JG</a>
+				<a href="#" class="logo">
+					<img src="/profile.png" alt="JG" class="logo-img" />
+				</a>
 				<ul class="nav-links">
 					<li><a href="#experience">Experience</a></li>
 					<li><a href="#projects">Projects</a></li>
-					<li><a href="#skills">Skills</a></li>
+					<li><a href="/blog">Blog</a></li>
 					<li><a href="#contact">Contact</a></li>
 				</ul>
 			</div>
@@ -221,6 +223,7 @@
 							<span class="skill-tag">Android</span>
 							<span class="skill-tag">Kotlin</span>
 							<span class="skill-tag">Jetpack Compose</span>
+							<span class="skill-tag">React Native</span>
 							<span class="skill-tag">Coroutines</span>
 							<span class="skill-tag">KMP</span>
 							<span class="skill-tag">iOS</span>
@@ -267,6 +270,7 @@
 							<span class="skill-tag">Git</span>
 							<span class="skill-tag">CI/CD</span>
 							<span class="skill-tag">GCP</span>
+							<span class="skill-tag">Firebase</span>
 						</div>
 					</div>
 
@@ -385,6 +389,15 @@
 				font-weight: 700;
 				color: var(--primary);
 				text-decoration: none;
+				display: flex;
+				align-items: center;
+			}
+
+			.logo-img {
+				width: 40px;
+				height: 40px;
+				border-radius: 50%;
+				object-fit: cover;
 			}
 
 			.nav-links {
