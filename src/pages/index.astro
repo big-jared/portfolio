@@ -400,6 +400,13 @@
 				object-fit: cover;
 			}
 
+			@media (max-width: 768px) {
+				.logo-img {
+					width: 32px;
+					height: 32px;
+				}
+			}
+
 			.nav-links {
 				display: flex;
 				list-style: none;
@@ -415,6 +422,17 @@
 
 			.nav-links a:hover {
 				color: var(--primary);
+			}
+
+			@media (max-width: 768px) {
+				.nav-container {
+					padding: 1rem;
+				}
+
+				.nav-links {
+					gap: 1rem;
+					font-size: 0.9rem;
+				}
 			}
 
 			/* Hero Section */
