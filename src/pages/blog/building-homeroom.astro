@@ -121,7 +121,7 @@
 					<ul>
 						<li><strong>Revenue Cat</strong>: The Revenue Cat KMP library doesn't support desktop yet, so we added a direct Stripe integration for subscriptions</li>
 						<li><strong>Authentication</strong>: Implemented custom flows for Google and Apple Sign-In since native auth isn't available on desktop</li>
-						<li><strong>Firebase</strong>: Used <a href="https://github.com/GitLiveApp/firebase-java-sdk" target="_blank">GitLiveApp's firebase-java-sdk</a> instead of the mobile Firebase SDK</li>
+						<li><strong>Firebase</strong>: Used <a href="https://github.com/GitLiveApp/firebase-java-sdk" target="_blank">GitLiveApp's firebase-java-sdk</a>, which automatically plugs into the <a href="https://github.com/GitLiveApp/firebase-kotlin-sdk" target="_blank">firebase-kotlin-sdk</a> supporting existing common APIs</li>
 					</ul>
 
 					<p>The whole process didn't take long, and the fact that 95%+ of our code just worked on desktop is a testament to Compose Multiplatform's maturity.</p>
