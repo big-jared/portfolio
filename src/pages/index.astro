@@ -38,7 +38,7 @@
 				<h1 class="hero-title">Jared Guttromson</h1>
 				<p class="hero-subtitle">Senior Software Engineer</p>
 				<p class="hero-description">
-					Experienced Android Engineer specializing in Kotlin Multiplatform development with a track record of building high-performance mobile applications at scale. Expert in modern Android architecture and cross-platform solutions.
+					Android engineer who loves building mobile apps with Kotlin and Kotlin Multiplatform. I've worked on high-performance apps at companies like Shopify and Intuit, and enjoy tackling challenging problems in mobile development.
 				</p>
 				<div class="hero-links">
 					<a href="https://github.com/big-jared" target="_blank" rel="noopener" class="btn-primary">
@@ -93,7 +93,7 @@
 								<span class="period">June 2018 - Sept 2024</span>
 							</div>
 							<ul class="achievements">
-								<li>Led a team of 5 developers working on the QB Workforce iOS and Android applications</li>
+								<li>Led a team of 5 developers working on the <a href="https://quickbooks.intuit.com/workforce/" target="_blank" rel="noopener" class="inline-link">QuickBooks Workforce</a> iOS and Android applications</li>
 								<li>Collaborated with team members to integrate new technologies like Kotlin Multiplatform, improving user experience and streamlining the development process</li>
 								<li>Migrated workforce app to Retrofit/Room libraries with an emphasis on test coverage, stabilizing the persistence and network layers</li>
 								<li>Conducted code reviews and mentored junior developers to ensure adherence to best practices</li>
@@ -138,9 +138,12 @@
 				<h2>Featured Projects</h2>
 
 				<div class="projects-grid">
-					<div class="project-card">
-						<h3>Homeroom App</h3>
-						<p>Student organization platform with AI-powered study guides and intelligent tutoring. Features include schedule management, grade tracking, and focus analysis.</p>
+					<div class="project-card featured-project">
+						<div class="project-logo">
+							<img src="/homeroom-logo.png" alt="Homeroom Logo" />
+						</div>
+						<h3>Homeroom</h3>
+						<p>Student organization platform with AI-powered study guides and intelligent tutoring. Features include schedule management, grade tracking, focus analysis, and subscriptions.</p>
 						<div class="project-links">
 							<a href="https://thehomeroom.app" target="_blank" rel="noopener">Website →</a>
 						</div>
@@ -148,19 +151,33 @@
 							<span class="tag">Mobile</span>
 							<span class="tag">AI</span>
 							<span class="tag">Full Stack</span>
+							<span class="tag">Founder</span>
 						</div>
 					</div>
 
 					<div class="project-card">
-						<h3>Grade Release</h3>
-						<p>Android app for student grade tracking and organization with 10K+ downloads on Google Play Store.</p>
+						<h3>Pickup</h3>
+						<p>Social platform connecting people for pickup sports and activities. Built to make finding games and teammates effortless.</p>
+						<div class="project-links">
+							<a href="https://joinpickup.app" target="_blank" rel="noopener">Website →</a>
+						</div>
+						<div class="tags">
+							<span class="tag">Mobile</span>
+							<span class="tag">Social</span>
+							<span class="tag">Co-Founder</span>
+						</div>
+					</div>
+
+					<div class="project-card">
+						<h3>Grade Pal</h3>
+						<p>Android app for student grade tracking and organization with 50K+ downloads on Google Play Store.</p>
 						<div class="project-links">
 							<a href="https://play.google.com/store/apps/details?id=com.gradetracker.jguttromson.graderelease" target="_blank" rel="noopener">Google Play →</a>
 						</div>
 						<div class="tags">
 							<span class="tag">Android</span>
 							<span class="tag">Kotlin</span>
-							<span class="tag">Published</span>
+							<span class="tag">50K+ Downloads</span>
 						</div>
 					</div>
 
@@ -287,16 +304,6 @@
 						<div>
 							<strong>LinkedIn</strong>
 							<p>jared-guttromson</p>
-						</div>
-					</a>
-
-					<a href="tel:+12083539534" class="contact-item">
-						<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-							<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-						</svg>
-						<div>
-							<strong>Phone</strong>
-							<p>(208) 353-9534</p>
 						</div>
 					</a>
 				</div>
@@ -543,6 +550,16 @@
 				color: var(--text-light);
 			}
 
+			.inline-link {
+				color: var(--primary);
+				text-decoration: none;
+				font-weight: 500;
+			}
+
+			.inline-link:hover {
+				text-decoration: underline;
+			}
+
 			.tags {
 				display: flex;
 				flex-wrap: wrap;
@@ -582,6 +599,23 @@
 				transform: translateY(-4px);
 				box-shadow: 0 10px 30px rgba(0,0,0,0.1);
 				border-color: var(--primary);
+			}
+
+			.featured-project {
+				border-color: var(--primary);
+				box-shadow: 0 4px 20px rgba(37, 99, 235, 0.1);
+			}
+
+			.project-logo {
+				margin-bottom: 1.5rem;
+				display: flex;
+				justify-content: center;
+			}
+
+			.project-logo img {
+				width: 80px;
+				height: 80px;
+				object-fit: contain;
 			}
 
 			.project-card h3 {
