@@ -30,6 +30,23 @@
 
 		<section class="blog-list">
 			<div class="container">
+				<article class="blog-card featured">
+					<div class="blog-meta">
+						<time datetime="2025-10-28">October 28, 2025</time>
+						<span class="read-time">12 min read</span>
+						<span class="badge">New</span>
+					</div>
+					<h2><a href="/blog/building-pericode">Building Pericode: Code While You Walk</a></h2>
+					<p>Designing a voice-controlled development environment with end-to-end encryption, offline AI models, and global relay infrastructure. Write code while walking, inspired by Aristotle's peripatetic philosophy.</p>
+					<div class="tags">
+						<span class="tag">Electron</span>
+						<span class="tag">SwiftUI</span>
+						<span class="tag">E2E Encryption</span>
+						<span class="tag">Cloudflare Workers</span>
+						<span class="tag">Claude Code</span>
+					</div>
+				</article>
+
 				<article class="blog-card">
 					<div class="blog-meta">
 						<time datetime="2025-10-20">October 20, 2025</time>
@@ -184,6 +201,22 @@
 				border-radius: 1rem;
 				font-size: 0.85rem;
 				border: 1px solid var(--border);
+			}
+
+			.badge {
+				background: var(--primary);
+				color: white;
+				padding: 0.25rem 0.75rem;
+				border-radius: 1rem;
+				font-size: 0.75rem;
+				font-weight: 600;
+				text-transform: uppercase;
+				letter-spacing: 0.5px;
+			}
+
+			.featured {
+				border-color: var(--primary);
+				background: linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(255, 255, 255, 1) 100%);
 			}
 		</style>
 	</body>
