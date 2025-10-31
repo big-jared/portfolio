@@ -30,13 +30,12 @@
 
 		<section class="blog-list">
 			<div class="container">
-				<article class="blog-card featured">
+				<article class="blog-card">
 					<div class="blog-meta">
 						<time datetime="2025-10-28">October 28, 2025</time>
 						<span class="read-time">12 min read</span>
-						<span class="badge">New</span>
 					</div>
-					<h2><a href="/blog/building-pericode">Building Pericode: Code While You Walk</a></h2>
+					<h2><a href="/blog/building-pericode">Pericode: Speech-Based Claude Code Mobile Client</a></h2>
 					<p>Designing a voice-controlled development environment with end-to-end encryption, offline AI models, and global relay infrastructure. Write code while walking, inspired by Aristotle's peripatetic philosophy.</p>
 					<div class="tags">
 						<span class="tag">Electron</span>
@@ -139,6 +138,22 @@
 
 			.nav-links a:hover {
 				color: var(--primary);
+			}
+
+			@media (max-width: 768px) {
+				.logo-img {
+					width: 32px;
+					height: 32px;
+				}
+
+				.nav-container {
+					padding: 1rem;
+				}
+
+				.nav-links {
+					gap: 1rem;
+					font-size: 0.9rem;
+				}
 			}
 
 			.blog-list {

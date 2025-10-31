@@ -36,7 +36,7 @@
 						<time datetime="2025-10-28">October 28, 2025</time>
 						<span class="read-time">12 min read</span>
 					</div>
-					<h1>Building Pericode: Code While You Walk</h1>
+					<h1>Pericode: Speech-Based Claude Code Mobile Client</h1>
 					<p class="subtitle">Designing a voice-controlled development environment with end-to-end encryption, offline AI models, and global relay infrastructure. Inspired by Aristotle's peripatetic philosophy.</p>
 					<div class="tags">
 						<span class="tag">Electron</span>
@@ -58,9 +58,9 @@
 					<h2>The Challenge: Three Hard Problems</h2>
 					<p>Building Pericode meant solving three distinct technical challenges:</p>
 					<ol>
-						<li><strong>Voice Processing:</strong> How do you do speech-to-text and text-to-speech without cloud latency?</li>
-						<li><strong>Security:</strong> How do you protect sensitive code over the internet?</li>
-						<li><strong>Connectivity:</strong> How do you connect devices across networks without VPN configuration?</li>
+						<li><strong>Voice:</strong> What's the best solution that balances cost, privacy, and user experience?</li>
+						<li><strong>Context:</strong> How do we give Claude more context to enable tight development loops when not physically at the desk?</li>
+						<li><strong>Privacy:</strong> How do you protect sensitive code and conversations when routing through relay servers?</li>
 					</ol>
 
 					<h2>Architecture Overview</h2>
@@ -77,12 +77,12 @@
 					</ul>
 
 					<h3>2. iOS App (SwiftUI)</h3>
-					<p>The mobile app provides the voice interface using cutting-edge offline AI:</p>
+					<p>The mobile app provides a session-based voice interface using cutting-edge offline AI:</p>
 					<ul>
 						<li><strong>Sherpa-ONNX:</strong> Neural network models for speech recognition and synthesis running entirely on-device</li>
 						<li><strong>Sub-second latency:</strong> STT completes in under 1 second, no cloud round-trip</li>
 						<li><strong>Privacy-first:</strong> Voice data never leaves your phone</li>
-						<li><strong>Apple integrations:</strong> Watch app, headphone controls, Live Activities on Dynamic Island</li>
+						<li><strong>Session-based interaction:</strong> Start a microphone session to communicate with Claude Code on your desktop</li>
 					</ul>
 
 					<h3>3. Relay Server (Cloudflare Workers)</h3>
@@ -94,23 +94,21 @@
 						<li><strong>Auto-scaling:</strong> Handles hundreds of concurrent sessions</li>
 					</ul>
 
-					<h2>Solving Voice Processing</h2>
-					<p>Early on, I had to choose between cloud-based voice services (Google, Azure, AWS) or offline models. Here's why I chose offline:</p>
+					<h2>Solving Voice: Cost, Privacy, and UX</h2>
+					<p>The voice challenge required balancing three competing factors. Cloud-based services (Google, Azure, AWS) offer great UX but come with recurring costs and privacy concerns. Offline models solve cost and privacy but require careful implementation. Here's why I chose offline:</p>
 
 					<h3>Why Sherpa-ONNX?</h3>
 					<p><strong>Sherpa-ONNX</strong> is a neural speech toolkit that runs ONNX models directly on device. The benefits are dramatic:</p>
 					<ul>
-						<li><strong>Latency:</strong> <1s for STT vs 2-3s for cloud APIs</li>
+						<li><strong>Latency:</strong> &lt;1s for STT vs 2-3s for cloud APIs</li>
 						<li><strong>Privacy:</strong> Voice never transmitted (critical for coding sessions)</li>
-						<li><strong>Cost:</strong> Zero per-request charges (cloud APIs charge $0.006-0.024/min)</li>
-						<li><strong>Offline:</strong> Works without internet (only Claude API calls need connectivity)</li>
-						<li><strong>Battery:</strong> More efficient than streaming audio to servers</li>
+						<li><strong>Cost:</strong> Completely free for unlimited usage (cloud APIs charge $0.006-0.024/min, adding up to $360-1,440/year for 1hr/day usage). For users who prefer cloud-based options, we also support bring-your-own-key for ElevenLabs and OpenAI.</li>
 					</ul>
 
 					<p>The trade-off? Model size. The STT model is ~150MB, TTS models ~50MB each. But with modern phone storage, this is negligible compared to the benefits.</p>
 
-					<h2>The Encryption Story</h2>
-					<p>Passing code snippets and voice commands through a relay server is a massive security risk. I needed bank-level encryption, but most E2E implementations add significant complexity.</p>
+					<h2>Solving Privacy: End-to-End Encryption</h2>
+					<p>When you're sending code snippets, API keys, and development commands through relay servers, privacy isn't optional—it's critical. The challenge was implementing bank-level encryption without adding complexity that would slow down the development experience.</p>
 
 					<h3>X25519 + ChaCha20-Poly1305</h3>
 					<p>I implemented a complete end-to-end encryption system:</p>
@@ -131,14 +129,14 @@
 						<li>~0.5ms overhead per message</li>
 					</ul>
 
-					<p>The result? The relay server sees only encrypted ciphertext. Your code, voice commands, and Claude responses are completely private.</p>
+					<p>The result? The relay server sees only encrypted ciphertext. Your code, voice commands, and Claude responses are completely private. This solves the privacy problem: even though messages route through Cloudflare's infrastructure, no one can read your sensitive development data.</p>
 
 					<h3>Security Properties</h3>
 					<ul>
 						<li><strong>Forward secrecy:</strong> Keys rotate per session</li>
 						<li><strong>Authentication:</strong> Firebase prevents session hijacking</li>
 						<li><strong>Zero-knowledge relay:</strong> Server cannot decrypt messages</li>
-						<li><strong>No key transmission:</strong> ECDH magic derives shared secret</li>
+						<li><strong>No key transmission:</strong> ECDH derives shared secret without sending keys over the network</li>
 					</ul>
 
 					<h2>The Relay Server Decision</h2>
@@ -163,18 +161,20 @@
 
 					<p>The ~50ms added latency is imperceptible in practice, and the user experience is dramatically better: just tap a desktop name in the app and connect instantly.</p>
 
-					<h2>Screenshot Streaming via MCP</h2>
-					<p>One of Claude Code's strengths is visual reasoning. To leverage this, I built screenshot integration using Model Context Protocol (MCP):</p>
+					<h2>Solving Context: Tight Development Loops Away From Your Desk</h2>
+					<p>The second challenge was giving Claude enough context to be useful when you're not at your computer. This is where MCP (Model Context Protocol) comes in. By streaming screenshots and file context to the mobile device, Claude can see what you're working on and provide accurate debugging help.</p>
+
+					<h3>Screenshot Streaming via MCP</h3>
 
 					<ul>
 						<li><strong>MCP Server:</strong> Desktop runs an MCP server that Claude Code can call</li>
 						<li><strong>Multiple capture modes:</strong> Active window, full screen, specific app</li>
-						<li><strong>Compression:</strong> Sharp library compresses to <4MB</li>
+						<li><strong>Compression:</strong> Sharp library compresses to &lt;4MB</li>
 						<li><strong>Base64 streaming:</strong> Images sent via relay in chunks</li>
 						<li><strong>Inline display:</strong> iOS shows thumbnails, tap for full-screen</li>
 					</ul>
 
-					<p>This means when you say "the UI looks broken," Claude can actually see your screen and provide accurate debugging help.</p>
+					<p>This solves the context problem: when you say "the UI looks broken" while on a walk, Claude can actually see your screen and provide accurate debugging help without you being at your desk.</p>
 
 					<h2>Multi-Agent Orchestration</h2>
 					<p>Unlike traditional chatbots, Pericode runs multiple Claude Code agents simultaneously:</p>
@@ -201,192 +201,40 @@
 
 					<p>Example: Claude wants to run <code>npm install</code>. You get a notification, review the command, approve or deny. If denied, Claude continues without that tool.</p>
 
-					<h2>Performance Metrics</h2>
-					<p>Here's how fast the system actually is:</p>
-
-					<table>
-						<thead>
-							<tr>
-								<th>Operation</th>
-								<th>Time</th>
-								<th>Notes</th>
-							</tr>
-						</thead>
-						<tbody>
-							<tr>
-								<td>STT (Speech-to-Text)</td>
-								<td>&lt;1 second</td>
-								<td>Sherpa-ONNX on iPhone 14</td>
-							</tr>
-							<tr>
-								<td>Encryption</td>
-								<td>~0.5ms</td>
-								<td>Per message</td>
-							</tr>
-							<tr>
-								<td>Relay routing</td>
-								<td>50-150ms</td>
-								<td>Depends on geography</td>
-							</tr>
-							<tr>
-								<td>Screenshot capture</td>
-								<td>&lt;200ms</td>
-								<td>macOS screencapture</td>
-							</tr>
-							<tr>
-								<td>TTS start</td>
-								<td>&lt;500ms</td>
-								<td>Until audio playback begins</td>
-							</tr>
-							<tr>
-								<td>End-to-end</td>
-								<td>2-5 seconds</td>
-								<td>Voice → Claude → Audio</td>
-							</tr>
-						</tbody>
-					</table>
-
-					<h2>Battery Life</h2>
-					<p>Mobile battery impact was a major concern:</p>
-					<ul>
-						<li><strong>Active use:</strong> &lt;5% per hour</li>
-						<li><strong>Background:</strong> &lt;1% per hour</li>
-						<li><strong>Screen on:</strong> Minimal impact (no video streaming)</li>
-					</ul>
-
-					<p>The offline AI models are surprisingly efficient. Most battery drain comes from the screen, not processing.</p>
-
-					<h2>Challenges & Lessons</h2>
-
-					<h3>1. WireGuard Complexity</h3>
-					<p><strong>Lesson:</strong> Sometimes the "right" technical solution isn't the right user experience. Scrapping weeks of WireGuard work to pivot to relay servers was painful but necessary.</p>
-
-					<h3>2. JSON Parsing Hell</h3>
-					<p>Claude Code outputs JSON for tool uses, but the format isn't strictly defined. I spent days building a robust parser that handles edge cases (nested JSON, streaming chunks, malformed output).</p>
-
-					<h3>3. Encryption Key Mismatches</h3>
-					<p>Early in development, desktop and mobile would derive different shared secrets due to subtle endianness bugs. Took a week to debug. Now rock-solid.</p>
-
-					<h3>4. Screenshot Size</h3>
-					<p>Initial implementation sent 10MB+ screenshots. Uncompressed PNGs are huge! Sharp library now compresses to <4MB with negligible quality loss.</p>
-
 					<h2>What's Next</h2>
-					<p>Pericode is fully functional and in private beta. Upcoming features:</p>
+					<p>Pericode is currently in private beta with plans for public release soon. The next phase focuses on:</p>
 
 					<ul>
-						<li><strong>Voice activation:</strong> "Hey Claude" wake word using Sherpa-ONNX</li>
-						<li><strong>WebRTC:</strong> Direct peer-to-peer connection with relay fallback</li>
-						<li><strong>Post-quantum encryption:</strong> Upgrade to Kyber once stable</li>
-						<li><strong>Collaborative mode:</strong> Multiple developers, one project</li>
-						<li><strong>Screen sharing:</strong> See desktop screen on mobile</li>
+						<li><strong>Public release:</strong> Opening up Pericode to all developers</li>
+						<li><strong>Tighter feedback loop:</strong> MCP tools specifically designed for mobile development workflows, enabling faster iteration cycles and better debugging capabilities when working on mobile projects via voice</li>
 					</ul>
-
-					<h2>Technology Stack Summary</h2>
-
-					<table>
-						<thead>
-							<tr>
-								<th>Component</th>
-								<th>Technology</th>
-								<th>Why</th>
-							</tr>
-						</thead>
-						<tbody>
-							<tr>
-								<td>Desktop Backend</td>
-								<td>Node.js + TypeScript</td>
-								<td>Fast development, Claude Code CLI integration</td>
-							</tr>
-							<tr>
-								<td>Desktop UI</td>
-								<td>React + Vite</td>
-								<td>Familiar tooling, fast builds</td>
-							</tr>
-							<tr>
-								<td>Desktop Framework</td>
-								<td>Electron</td>
-								<td>Cross-platform, mature ecosystem</td>
-							</tr>
-							<tr>
-								<td>iOS Framework</td>
-								<td>SwiftUI</td>
-								<td>Native performance, Apple integrations</td>
-							</tr>
-							<tr>
-								<td>STT/TTS</td>
-								<td>Sherpa-ONNX</td>
-								<td>Offline, low latency, privacy</td>
-							</tr>
-							<tr>
-								<td>Encryption</td>
-								<td>X25519 + ChaCha20-Poly1305</td>
-								<td>Modern, fast, proven security</td>
-							</tr>
-							<tr>
-								<td>Relay</td>
-								<td>Cloudflare Workers</td>
-								<td>Global edge, zero config, free tier</td>
-							</tr>
-							<tr>
-								<td>Database</td>
-								<td>Firebase Firestore</td>
-								<td>Real-time, authentication included</td>
-							</tr>
-							<tr>
-								<td>Claude Integration</td>
-								<td>Claude Code CLI</td>
-								<td>Computer use tools, MCP support</td>
-							</tr>
-						</tbody>
-					</table>
-
-					<h2>Open Source?</h2>
-					<p>Currently in private beta. I'm exploring options for open-sourcing components (encryption library, relay server template, MCP screenshot server) while keeping the core product commercial.</p>
-
-					<p>If you're interested in trying Pericode or have feedback on what should be open-sourced, reach out!</p>
 
 					<h2>Conclusion</h2>
 					<p>Building Pericode taught me that the best developer experiences come from solving multiple hard problems well:</p>
 
 					<ul>
-						<li><strong>Latency matters:</strong> Offline AI models beat cloud services for user experience</li>
+						<li><strong>Cost matters:</strong> Offline AI models eliminate recurring voice API costs</li>
 						<li><strong>Security is non-negotiable:</strong> E2E encryption is table stakes for code tools</li>
 						<li><strong>UX > technical elegance:</strong> Relay servers beat VPN in practice</li>
-						<li><strong>Integration depth wins:</strong> Watch, headphones, Live Activities all add up</li>
+						<li><strong>Simplicity wins:</strong> Session-based voice interaction keeps the experience focused</li>
 					</ul>
 
 					<p>Most importantly: sometimes your best code happens when you're not at your desk. Pericode is my attempt to make that a reality.</p>
 
 					<p><strong>Try it:</strong> <a href="https://pericode.app" target="_blank">pericode.app</a></p>
-
-					<p><strong>GitHub:</strong> Coming soon (components will be open-sourced)</p>
 				</div>
-
-				<footer class="post-footer">
-					<div class="author-info">
-						<img src="/profile.png" alt="Jared Guttromson" class="author-avatar" />
-						<div class="author-details">
-							<strong>Jared Guttromson</strong>
-							<p>Building tools for developers. Previously at Yum! Brands, Stanford.</p>
-						</div>
-					</div>
-					<div class="share-links">
-						<a href="https://twitter.com/intent/tweet?text=Building%20Pericode%3A%20Voice-Controlled%20Development&url=https://jaredguttromson.com/blog/building-pericode" target="_blank">Share on Twitter</a>
-						<a href="https://www.linkedin.com/sharing/share-offsite/?url=https://jaredguttromson.com/blog/building-pericode" target="_blank">Share on LinkedIn</a>
-					</div>
-				</footer>
 			</div>
 		</article>
 
 		<style>
 			:root {
-				--bg-primary: #0a0a0a;
-				--bg-secondary: #111;
-				--text-primary: #e4e4e4;
-				--text-secondary: #a0a0a0;
-				--accent: #7c3aed;
-				--accent-hover: #8b5cf6;
-				--border: #222;
+				--bg-primary: #ffffff;
+				--bg-secondary: #f8fafc;
+				--text-primary: #1e293b;
+				--text-secondary: #64748b;
+				--accent: #2563eb;
+				--accent-hover: #1e40af;
+				--border: #e2e8f0;
 			}
 
 			* {
