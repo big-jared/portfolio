@@ -53,7 +53,7 @@
 
 					<p>The name comes from Aristotle's <em>peripatetic</em> school of philosophy, where he taught while walking. The idea: your best thinking often happens when you're moving, not sitting still.</p>
 
-					<p><strong>Try it:</strong> <a href="https://pericode.app" target="_blank">pericode.app</a></p>
+					<p><strong>Website:</strong> <a href="https://pericode.app" target="_blank">pericode.app</a></p>
 
 					<h2>The Challenge: Three Hard Problems</h2>
 					<p>Building Pericode meant solving three distinct technical challenges:</p>
@@ -140,15 +140,7 @@
 					</ul>
 
 					<h2>The Relay Server Decision</h2>
-					<p>Initially, I tried building a direct connection using WireGuard VPN. After weeks of development, I scrapped it. Here's why:</p>
-
-					<h3>Problems with WireGuard:</h3>
-					<ul>
-						<li>Requires sudo on desktop (security red flag)</li>
-						<li>Complex pairing (QR codes, config files)</li>
-						<li>Doesn't work across different networks without port forwarding</li>
-						<li>No automatic discovery</li>
-					</ul>
+					<p>For device connectivity, I chose Cloudflare Workers + Durable Objects to create a seamless, zero-configuration experience:</p>
 
 					<h3>Why Cloudflare Workers + Durable Objects?</h3>
 					<ul>
@@ -162,7 +154,7 @@
 					<p>The ~50ms added latency is imperceptible in practice, and the user experience is dramatically better: just tap a desktop name in the app and connect instantly.</p>
 
 					<h2>Solving Context: Tight Development Loops Away From Your Desk</h2>
-					<p>The second challenge was giving Claude enough context to be useful when you're not at your computer. This is where MCP (Model Context Protocol) comes in. By streaming screenshots and file context to the mobile device, Claude can see what you're working on and provide accurate debugging help.</p>
+					<p>The second challenge was giving Claude enough context to be useful when you're not at your computer. This is where MCP (Model Context Protocol) comes in. By streaming screenshots, file context, and mobile test documentation to the mobile device, Claude can see what you're working on and provide accurate debugging help.</p>
 
 					<h3>Screenshot Streaming via MCP</h3>
 
@@ -174,7 +166,18 @@
 						<li><strong>Inline display:</strong> iOS shows thumbnails, tap for full-screen</li>
 					</ul>
 
-					<p>This solves the context problem: when you say "the UI looks broken" while on a walk, Claude can actually see your screen and provide accurate debugging help without you being at your desk.</p>
+					<h3>Maestro Documentation Integration</h3>
+
+					<p>For mobile development workflows, I integrated <strong>Maestro</strong> documentation into the context system. Maestro is a cross-platform UI testing framework that works with iOS, Android, React Native, Flutter, SwiftUI, and Jetpack Compose. While this integration is experimental, it's showing promising results. By including Maestro docs in Claude's context:</p>
+
+					<ul>
+						<li><strong>Natural language test writing:</strong> Ask Claude to "write a test that logs in and navigates to settings" and it generates valid Maestro YAML</li>
+						<li><strong>Framework-agnostic testing:</strong> Works across all mobile frameworks without platform-specific knowledge</li>
+						<li><strong>Visual debugging:</strong> Combine screenshots with Maestro test commands for precise mobile UI feedback</li>
+						<li><strong>Rapid iteration:</strong> Generate, modify, and run UI tests entirely via voice while away from your desk</li>
+					</ul>
+
+					<p>This solves the context problem: when you say "the UI looks broken" while on a walk, Claude can actually see your screen and provide accurate debugging help without you being at your desk. For mobile projects, Claude can also generate Maestro tests to validate the fix.</p>
 
 					<h2>Multi-Agent Orchestration</h2>
 					<p>Unlike traditional chatbots, Pericode runs multiple Claude Code agents simultaneously:</p>
@@ -206,7 +209,9 @@
 
 					<ul>
 						<li><strong>Public release:</strong> Opening up Pericode to all developers</li>
-						<li><strong>Tighter feedback loop:</strong> MCP tools specifically designed for mobile development workflows, enabling faster iteration cycles and better debugging capabilities when working on mobile projects via voice</li>
+						<li><strong>Template projects:</strong> Pre-configured starter projects across different frameworks (React Native, Flutter, SwiftUI) that work out of the box with Pericode, complete with MCP server setup, screenshot tools, and Maestro integration for immediate voice-controlled development</li>
+						<li><strong>Maestro integration:</strong> MCP tools for mobile UI testing and automation, enabling Claude to understand and interact with mobile app flows through natural language commands</li>
+						<li><strong>Screenshot feedback MCP:</strong> Advanced screenshot analysis tools specifically designed for mobile development, allowing Claude to provide detailed UI/UX feedback and catch visual regressions during voice-based development sessions</li>
 					</ul>
 
 					<h2>Conclusion</h2>
@@ -221,7 +226,7 @@
 
 					<p>Most importantly: sometimes your best code happens when you're not at your desk. Pericode is my attempt to make that a reality.</p>
 
-					<p><strong>Try it:</strong> <a href="https://pericode.app" target="_blank">pericode.app</a></p>
+					<p><strong>Website:</strong> <a href="https://pericode.app" target="_blank">pericode.app</a></p>
 				</div>
 			</div>
 		</article>
