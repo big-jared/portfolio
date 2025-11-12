@@ -1,0 +1,432 @@
+---
+---
+
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="viewport" content="width=device-width" />
+		<title>Building Pickup | Jared Guttromson</title>
+		<meta name="description" content="The journey of building Pickup, a Kotlin Multiplatform app that connects communities through pickup sports and local games" />
+
+		<!-- Fonts -->
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+	</head>
+	<body>
+		<nav>
+			<div class="nav-container">
+				<a href="/" class="logo">
+					<img src="/profile.png" alt="JG" class="logo-img" />
+				</a>
+				<ul class="nav-links">
+					<li><a href="/#experience">Experience</a></li>
+					<li><a href="/#projects">Projects</a></li>
+					<li><a href="/blog">Blog</a></li>
+					<li><a href="/#contact">Contact</a></li>
+				</ul>
+			</div>
+		</nav>
+
+		<article class="blog-post">
+			<div class="container">
+				<header class="post-header">
+					<div class="post-meta">
+						<time datetime="2025-11-12">November 12, 2025</time>
+						<span class="read-time">10 min read</span>
+					</div>
+					<h1>Pickup: Make Friends Through Sports</h1>
+					<p class="subtitle">The unexpected complexity, technical decisions, and lessons learned from building a social sports platform with Kotlin Multiplatform.</p>
+					<div class="tags">
+						<span class="tag">Kotlin Multiplatform</span>
+						<span class="tag">Compose</span>
+						<span class="tag">Firebase</span>
+						<span class="tag">Social App</span>
+						<span class="tag">Sports</span>
+					</div>
+				</header>
+
+				<div class="post-content">
+					<h2>Introduction</h2>
+					<p>There's something about pickup sports that feels increasingly rare in our digital age: real, spontaneous community. No algorithms deciding who you meet, no endless scrolling through feeds. Just you, a basketball, and whoever shows up at the park.</p>
+
+					<p>That's the vision behind Pickup. Not another app where you're the product, but a tool to make real-world connection accessible. A way to find that Tuesday night volleyball game at the park down the street, or discover which courts have the best basketball runs on weekends.</p>
+
+					<p>What I didn't expect was just how complex building a "simple" sports coordination app would turn out to be.</p>
+
+					<img src="/blog/1.png" alt="Pickup map view showing nearby games" class="blog-image" />
+
+					<h2>The Unexpected Complexity of Social Apps</h2>
+					<p>When I started Pickup, I imagined it as straightforward: users, games, parks. Maybe some chat functionality. How hard could it be?</p>
+
+					<p>Turns out, social apps are deceptively complex. The moment you introduce relationships between entities, the complexity multiplies exponentially. Here's what I mean:</p>
+
+					<ul>
+						<li><strong>Users have relationships with other users</strong> - friendships, blocked users, pending requests</li>
+						<li><strong>Users have relationships with games</strong> - joining, leaving, hosting, getting kicked</li>
+						<li><strong>Users have relationships with parks</strong> - favorites, preferences, arrival notifications</li>
+						<li><strong>Games have relationships with parks</strong> - location data, availability, capacity</li>
+						<li><strong>Chats have relationships with everything</strong> - game chats, park chats, direct messages, series chats</li>
+						<li><strong>Series tie multiple games together</strong> - recurring events with their own context and continuity</li>
+					</ul>
+
+					<p>This was one of those humbling moments in software development where you realize the iceberg is much bigger than you thought. Each relationship required careful consideration of state management, permissions, notifications, and edge cases. The data model ended up being the most critical architectural decision of the entire project. Get it wrong early, and you're stuck refactoring hundreds of files later. Trust me, I know.</p>
+
+					<img src="/blog/2.png" alt="Home screen showing upcoming games and recommendations" class="blog-image" />
+
+					<h2>Core Features: Building the Social Layer</h2>
+					<p>At the heart of Pickup is communication. Finding a game is one thing, but coordinating with people is what makes it work. The chat system became surprisingly sophisticated:</p>
+
+					<h3>Park Chats</h3>
+					<p>Every park has a community chat. Think of it as a digital bulletin board for that location. Someone asks "anyone up for tennis at 6?", another person responds, and suddenly you've got a game. These chats are persistent and location-based, creating micro-communities around physical spaces.</p>
+
+					<img src="/blog/7.png" alt="Park chat interface with game creation" class="blog-image" />
+
+					<h3>Game Chats</h3>
+					<p>Once you've joined a game, you get access to the game-specific chat. This is where the coordination happens: "Running 10 mins late", "Bringing an extra ball", "Should we switch to the covered courts?" These chats are ephemeral by design - they exist for the lifetime of the game and then archive.</p>
+
+					<img src="/blog/3.png" alt="Messages view showing game and park chats" class="blog-image" />
+
+					<h3>Series Chats</h3>
+					<p>For recurring games - like your weekly Thursday night basketball - series chats provide continuity. The same group, the same banter, week after week. This ended up being crucial for building actual community rather than just one-off interactions.</p>
+
+					<h3>Group Chats</h3>
+					<p>Beyond location and game-based chats, you can create private group chats with your friends. Planning a multi-park basketball run across the city? Group chats give you a dedicated space for your regular playing partners, separate from the public park chats and temporary game chats.</p>
+
+					<h3>Reviews and Reputation</h3>
+					<p>After playing together, users can leave reviews for each other. It's not about ratings or scores - it's about building trust in the community. "Great teammate, always on time" or "Friendly player, good energy" help people know who they're playing with. The system is opt-in and lightweight, designed to highlight good community members without creating toxicity around arbitrary numbers.</p>
+
+					<h3>Real-Time Coordination</h3>
+					<p>All of this chat infrastructure had to be real-time. Nobody wants to refresh to see if the game is still on. Firebase's Firestore handled this beautifully with its snapshot listeners, though managing subscription lifecycles across platform boundaries proved tricky.</p>
+
+					<h2>Maps: Different Platforms, Different Worlds</h2>
+					<p>One of the more interesting technical challenges was map integration. On the surface: just show pins on a map. In practice: two completely different implementations.</p>
+
+					<h3>Android: Google Maps</h3>
+					<p>On Android, we use Google Maps with clustering for performance. When you have dozens of parks in view, individual markers get overwhelming fast. The clustering algorithm groups nearby parks, expanding as you zoom in. The implementation lives in <code>MapTabContent.android.kt</code>, using the Maps Compose library which gives us that nice declarative API.</p>
+
+					<h3>iOS: MapKit</h3>
+					<p>iOS gets the native MapKit treatment (<code>MapTabContent.ios.kt</code>). Apple's maps look and feel different - more refined in some ways, though the annotation customization APIs are more restrictive. The expect/actual pattern in Kotlin Multiplatform made this split implementation surprisingly clean.</p>
+
+					<p>Both implementations share the same business logic for filtering parks, calculating distances, and managing selected locations. Only the actual rendering diverges. This is Kotlin Multiplatform at its best: write the complex stuff once, customize the UI per platform.</p>
+
+					<h2>Privacy and Data Ownership</h2>
+					<p>Building a social sports app means handling sensitive data - location, contacts, real-time whereabouts. Privacy isn't an afterthought; it's fundamental to the platform.</p>
+
+					<h3>Location Data</h3>
+					<p>Pickup only uses location data when you explicitly choose to share it. Arrival notifications are opt-in, and your precise location is never shared with other users - just the fact that you've arrived at the park. Location data is processed on-device first, and only the minimum necessary information is sent to the server.</p>
+
+					<h3>Chat and Communication</h3>
+					<p>All chat messages are encrypted in transit using TLS. While messages aren't end-to-end encrypted (we need to support features like offline message delivery and cross-device sync), they're stored securely and never sold or shared with third parties. You control who can message you, and blocking/reporting tools are built in from day one.</p>
+
+					<h3>Privacy Controls</h3>
+					<p>You control your visibility on the platform. Want to use Pickup but not be searchable by strangers? Toggle off discoverability. Don't want random friend requests? Turn that off too. Every game can be set to private - invite only, no public visibility. Games can also require approval to join, giving hosts control over who participates. You can participate in pickup sports without broadcasting your presence to everyone.</p>
+
+					<img src="/blog/8.png" alt="Privacy and visibility settings screen" class="blog-image" />
+
+					<h3>Content Moderation</h3>
+					<p>Every piece of user-generated content - messages, game descriptions, user profiles - runs through OpenAI's moderation model before it's saved. This catches most problematic content automatically. Severe violations get flagged immediately and ping my Slack instance directly, so I can respond fast. The built-in reporting system also notifies me instantly when users flag content or behavior. It's a small app right now, so this manual oversight works. As it scales, the automated moderation provides a first line of defense.</p>
+
+					<h3>No General Ads, No Data Selling</h3>
+					<p>Pickup's business model is simple: optional paid features like leagues and tournaments. Your data is never sold to advertisers. Your game history, chat logs, and preferences exist to make your experience better - not to build an advertising profile. While we might explore sport-specific ads in the future (think local sports leagues, equipment deals), there will never be generic banner ads or tracking pixels from third-party ad networks.</p>
+
+					<img src="/blog/4.png" alt="User profile with sports and park preferences" class="blog-image" />
+
+					<h2>Features I'm Proud Of</h2>
+					<p>Some features came together better than expected:</p>
+
+					<h3>Arrival Notifications</h3>
+					<p>The <code>ParkArrivalManager</code> monitors your location and notifies your game chat when you arrive at the park. Small feature, but it feels magical when you pull into the parking lot and your phone buzzes with "Brandon has arrived!"</p>
+
+					<h3>Smart Game Recommendations</h3>
+					<p>The recommendation system considers your sport preferences, favorite parks, skill level, and typical playing times. It's not ML-powered or anything fancy - just good old-fashioned filtering and scoring - but it works surprisingly well.</p>
+
+					<h3>Live Game Scoring</h3>
+					<p>Every sport has its own scoring system, and Pickup supports them all. Track sets and points in real-time for roundnet, volleyball, pickleball, or any other game. The scoring interface handles team assignments, supports multiple concurrent games, and automatically ends games after a timeout period. It keeps a full match history, making it easy to review past games and track your progress. Way more fun than trying to remember the score mid-game.</p>
+
+					<img src="/blog/5.png" alt="Live game scoring interface" class="blog-image" />
+
+					<h3>Achievements System</h3>
+					<p>Gamification done tastefully. "First Game", "Regular Player" (10 games), "Legend" (100 games). Purely cosmetic, no pay-to-win nonsense, just fun milestones to mark your journey.</p>
+
+					<img src="/blog/6.png" alt="Achievements screen showing game milestones" class="blog-image" />
+
+					<h3>Deep Linking and Deferred Deep Linking</h3>
+					<p>Sharing a game works seamlessly across the entire user journey. When someone shares a game, the link takes you directly into that game - even if you don't have the app installed yet. The deferred deep linking flow handles everything: install from the app store, complete onboarding, and land right in the shared game. No copying links, no "now go find the game manually" friction. Just tap, install, onboard, and you're in.</p>
+
+					<h3>Join Game from PDF</h3>
+					<p>Every game can be exported as a shareable PDF with all the details: time, location, participants, QR code for quick access. Perfect for posting on bulletin boards at gyms or community centers. Scan the code, and you're in the game. To make this work, I built <a href="https://github.com/big-jared/kmpdf" target="_blank" rel="noopener">kmpdf</a>, a Kotlin Multiplatform PDF creation library. Because sometimes you need to take digital coordination into the physical world.</p>
+
+					<h2>Marketing: The Final Boss</h2>
+					<p>Here's the uncomfortable truth: building the app was the easy part. Getting people to actually download and use it? That's the real challenge. And honestly, the marketing strategy is still very much TBD.</p>
+
+					<p>I can architect a complex social platform, wrangle real-time data sync across platforms, and build custom PDF libraries - but getting strangers to trust a new social app from an unknown developer? That's a whole different game. One where "just build it and they'll come" is about as effective as showing up to an empty basketball court and hoping for a 5v5.</p>
+
+					<p>The app store is a graveyard of beautifully engineered apps that nobody uses. Pickup could have the cleanest architecture and the smoothest UX, but if nobody knows it exists, it's just an expensive side project. The real question isn't "can we build cool features?" - it's "how do we convince the pickup basketball crowd at the local park to switch from their group chat to our app?"</p>
+
+					<p>So yes, marketing strategy is TBD. And it's probably going to be harder than everything else combined. If you have ideas - or you're reading this and you actually organize pickup games - please reach out. I can debug a race condition in distributed state management, but viral growth strategies? That's magic I haven't figured out yet.</p>
+
+					<h2>Lessons Learned</h2>
+					<p>Building a social sports app taught me more than I expected:</p>
+
+					<h3>Social Features Are a Multiplier</h3>
+					<p>Every social feature you add multiplies complexity. Chat, friends, blocking, reporting - each one introduces edge cases and state management challenges. Don't underestimate this. What seems like "just add chat" is actually "add chat infrastructure, message state, read receipts, typing indicators, push notifications, moderation tools, and 47 edge cases."</p>
+
+					<h3>Data Models Matter More Than You Think</h3>
+					<p>Get your data model right early or suffer later. Seriously. I refactored the game-park-user relationship three times before finding something that scaled. Each refactor meant touching dozens of files. Design your models with relationships in mind from day one.</p>
+
+					<h3>Real-Time Adds Delight</h3>
+					<p>The difference between polling for updates and real-time listeners is night and day for user experience. Seeing messages appear instantly, watching game rosters update live - this makes the app feel alive. Worth the added complexity.</p>
+
+					<h3>Community Is the Product</h3>
+					<p>At the end of the day, Pickup isn't really about the features or the tech stack. It's about getting people to the park. The best technical decision I made was to keep the focus on real-world connection rather than in-app engagement metrics. If someone uses Pickup for 2 minutes and then plays basketball for 2 hours, that's a win.</p>
+
+					<h2>Future Monetization: City Leagues and Beyond</h2>
+					<p>Here's the thing about sports apps: the users are already spending money on sports. Balls, shoes, court rentals, leagues. The question isn't whether there's money in the market, but how to provide real value worth paying for.</p>
+
+					<h3>City Leagues</h3>
+					<p>The main monetization plan is organized leagues. Think of it as pickup sports with structure: regular schedules, standings, playoffs, championships. Cities could host basketball leagues, volleyball tournaments, tennis ladders. We provide the platform, handle registration and payment, coordinate schedules, and track standings. Cities get a cut, we get a cut, players get organized competition.</p>
+
+					<h3>Clubs and Tournaments</h3>
+					<p>Beyond leagues, there's appetite for private clubs and one-off tournaments. A group of pickleball players wants to run a weekend tournament? We can handle the bracket, scheduling, and coordination. A tennis club wants to manage their membership and court bookings? Built-in functionality.</p>
+
+					<h3>Affiliate Marketing</h3>
+					<p>Sports equipment is a natural fit. When you're in a roundnet chat and someone asks "what ball do you use?", imagine being able to share affiliate links right in the app. No intrusive ads, just helpful recommendations that support the platform. Same for shoes, nets, bags - anything players actually want.</p>
+
+					<p>The key is that none of this compromises the core experience. Finding and joining pickup games will always be free. The monetization comes from enhanced features that make sense for people already invested in the community.</p>
+				</div>
+
+				<footer class="post-footer">
+					<a href="/blog" class="back-link">← Back to Blog</a>
+				</footer>
+			</div>
+		</article>
+
+		<style>
+			* {
+				margin: 0;
+				padding: 0;
+				box-sizing: border-box;
+			}
+
+			:root {
+				--primary: #2563eb;
+				--primary-dark: #1e40af;
+				--text: #1e293b;
+				--text-light: #64748b;
+				--bg: #ffffff;
+				--bg-secondary: #f8fafc;
+				--border: #e2e8f0;
+			}
+
+			body {
+				font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+				line-height: 1.6;
+				color: var(--text);
+				background: var(--bg);
+			}
+
+			.container {
+				max-width: 800px;
+				margin: 0 auto;
+				padding: 0 2rem;
+			}
+
+			nav {
+				position: sticky;
+				top: 0;
+				background: rgba(255, 255, 255, 0.9);
+				backdrop-filter: blur(10px);
+				border-bottom: 1px solid var(--border);
+				z-index: 100;
+			}
+
+			.nav-container {
+				max-width: 1100px;
+				margin: 0 auto;
+				padding: 1.5rem 2rem;
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+			}
+
+			.logo {
+				display: flex;
+				align-items: center;
+				text-decoration: none;
+			}
+
+			.logo-img {
+				width: 40px;
+				height: 40px;
+				border-radius: 50%;
+				object-fit: cover;
+			}
+
+			.nav-links {
+				display: flex;
+				list-style: none;
+				gap: 2rem;
+			}
+
+			.nav-links a {
+				color: var(--text);
+				text-decoration: none;
+				font-weight: 500;
+				transition: color 0.3s;
+			}
+
+			.nav-links a:hover {
+				color: var(--primary);
+			}
+
+			.blog-post {
+				padding: 3rem 0;
+			}
+
+			.post-header {
+				margin-bottom: 3rem;
+				padding-bottom: 2rem;
+				border-bottom: 1px solid var(--border);
+			}
+
+			.post-meta {
+				display: flex;
+				gap: 1rem;
+				margin-bottom: 1rem;
+				font-size: 0.9rem;
+				color: var(--text-light);
+			}
+
+			.post-header h1 {
+				font-size: 2.5rem;
+				font-weight: 800;
+				margin-bottom: 1rem;
+				line-height: 1.2;
+			}
+
+			.subtitle {
+				font-size: 1.1rem;
+				color: var(--text-light);
+				margin-bottom: 1.5rem;
+				line-height: 1.7;
+			}
+
+			.tags {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.5rem;
+			}
+
+			.tag {
+				background: var(--bg-secondary);
+				color: var(--text);
+				padding: 0.25rem 0.75rem;
+				border-radius: 1rem;
+				font-size: 0.85rem;
+				border: 1px solid var(--border);
+			}
+
+			.post-content {
+				font-size: 1.1rem;
+				line-height: 1.8;
+			}
+
+			.post-content h2 {
+				font-size: 1.75rem;
+				font-weight: 700;
+				margin: 2.5rem 0 1rem;
+			}
+
+			.post-content h2:first-child {
+				margin-top: 0;
+			}
+
+			.post-content h3 {
+				font-size: 1.4rem;
+				font-weight: 600;
+				margin: 2rem 0 0.75rem;
+			}
+
+			.post-content p {
+				margin-bottom: 1.5rem;
+			}
+
+			.post-content ul {
+				margin: 1.5rem 0;
+				padding-left: 2rem;
+			}
+
+			.post-content li {
+				margin-bottom: 0.75rem;
+			}
+
+			.post-content code {
+				background: var(--bg-secondary);
+				padding: 0.2rem 0.4rem;
+				border-radius: 0.25rem;
+				font-family: 'Courier New', monospace;
+				font-size: 0.9em;
+			}
+
+			.post-content a {
+				color: var(--primary);
+				text-decoration: none;
+			}
+
+			.post-content a:hover {
+				text-decoration: underline;
+			}
+
+			.blog-image {
+				width: 100%;
+				max-width: 500px;
+				height: auto;
+				border-radius: 0.5rem;
+				margin: 2rem auto;
+				display: block;
+				box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+				border: 1px solid var(--border);
+			}
+
+			.desktop-image {
+				max-width: 700px;
+			}
+
+			.post-footer {
+				margin-top: 4rem;
+				padding-top: 2rem;
+				border-top: 1px solid var(--border);
+			}
+
+			.back-link {
+				color: var(--primary);
+				text-decoration: none;
+				font-weight: 500;
+			}
+
+			.back-link:hover {
+				text-decoration: underline;
+			}
+
+			@media (max-width: 768px) {
+				.post-header h1 {
+					font-size: 2rem;
+				}
+
+				.post-content {
+					font-size: 1rem;
+				}
+
+				.post-content h2 {
+					font-size: 1.5rem;
+				}
+
+				.post-content h3 {
+					font-size: 1.25rem;
+				}
+			}
+		</style>
+	</body>
+</html>
