@@ -90,10 +90,10 @@
 					<h3>App Architecture</h3>
 					<p>Trellis uses a state holder pattern rather than traditional MVVM. Each screen has a corresponding state class that holds all the data and flags the UI needs. State is composed at the top level and flows down through the component tree.</p>
 
-					<p>The data layer follows a repository pattern: repositories abstract over Supabase calls, edge function invocations, and local caching. Edge functions are called via <code>supabase.functions.invoke()</code>, with responses deserialized through an intermediate string step due to a Supabase Kotlin SDK limitation.</p>
+					<p>The data layer follows a repository pattern: repositories abstract over Supabase calls, edge function invocations, and local caching.</p>
 
 					<h3>Navigation</h3>
-					<p>The app uses a four-tab structure managed by a <code>MainScreen</code> shell:</p>
+					<p>The app uses a four-tab structure:</p>
 					<ul>
 						<li><strong>Home</strong> - Weekly spend gauge, onboarding checklist, today's meals, top deals, spending pace, upcoming recurring payments</li>
 						<li><strong>Household Budget</strong> - Interactive spending wheel, six-state budget messaging, category breakdown, saving goals and history</li>
@@ -107,7 +107,7 @@
 					<p>During the splash screen, the app kicks off parallel data loads: user profile, budget data, transaction history, meal plans, deals, and subscription status all load concurrently. By the time the user sees the home screen, everything is ready.</p>
 
 					<h3>Edge Function Pattern</h3>
-					<p>All 26 edge functions follow a consistent pattern. The client sends a JSON body via Supabase's function invoke, the function authenticates using either the user's JWT or the service role key depending on context, processes the request, and returns a JSON response. Functions that need to handle both authenticated and unauthenticated requests (like the deals function which serves both logged-in users and public pricing) are deployed with <code>verify_jwt: false</code> and handle auth internally.</p>
+					<p>All 26 edge functions follow a consistent pattern. The client sends a JSON request, the function authenticates and processes it, and returns a JSON response. Functions that need to handle both authenticated and unauthenticated requests handle auth internally.</p>
 
 					<h2>RevenueCat Integration</h2>
 
@@ -117,13 +117,13 @@
 					<p>We use the <a href="https://github.com/nicklama/purchases-kmp">RevenueCat KMP SDK</a> (v2.5.0), which provides a unified Kotlin API across both platforms. The SDK is configured once on startup and a delegate listens for customer info updates to keep the subscription state in sync.</p>
 
 					<h3>Subscription Tiers</h3>
-					<p>Trellis has two paid tiers, each mapped to a RevenueCat offering:</p>
+					<p>Trellis has two paid tiers, each mapped to its own RevenueCat offering:</p>
 					<ul>
-						<li><strong>Essentials</strong> (RevenueCat offering: <code>default</code>) - Smart budget tracking, meal and pantry planning, local deal alerts, family teaching view. Monthly and yearly plans.</li>
-						<li><strong>Family+</strong> (RevenueCat offering: <code>family</code>) - Everything in Essentials plus meal generation and nutrition, store price comparison, unlimited connections, and enhanced budget features. Monthly, yearly, and lifetime plans.</li>
+						<li><strong>Essentials</strong> - Smart budget tracking, meal and pantry planning, local deal alerts, family teaching view. Available as monthly and yearly plans.</li>
+						<li><strong>Family+</strong> - Everything in Essentials plus meal generation and nutrition, store price comparison, unlimited connections, and enhanced budget features. Available as monthly and yearly plans.</li>
 					</ul>
 
-					<p>Each offering contains packages identified by period (<code>month</code>, <code>annual</code>, <code>lifetime</code>). On the paywall, prices are pulled directly from RevenueCat offerings so they stay in sync with App Store Connect and Google Play Console without code changes.</p>
+					<p>On the paywall, prices are pulled directly from RevenueCat so they stay in sync with App Store Connect and Google Play Console without code changes.</p>
 
 					<h3>Entitlements</h3>
 					<p>Two entitlements drive feature access:</p>
@@ -137,14 +137,14 @@
 					<h3>In-House Free Trial</h3>
 					<p>This is where our implementation diverges from the typical RevenueCat setup. We made a deliberate choice to manage the free trial ourselves rather than using RevenueCat's built-in trial functionality.</p>
 
-					<p>The reasoning: RevenueCat trials are tied to a specific product and start when the user subscribes. We wanted something different. When a user signs up and completes onboarding, they get the rest of the current month plus the entire next month with full Family+ access. No credit card required, no subscription commitment. The trial end date is computed as the last day of the next calendar month (sign up February 7th, trial runs through March 31st) and stored in our Supabase <code>users</code> table.</p>
+					<p>The reasoning: RevenueCat trials are tied to a specific product and start when the user subscribes. We wanted something different. When a user signs up and completes onboarding, they get the rest of the current month plus the entire next month with full Family+ access. No credit card required, no subscription commitment. The trial end date is computed as the last day of the next calendar month (sign up February 7th, trial runs through March 31st) and stored in our database.</p>
 
 					<p>This gives the app time to prove its value. You need at least one full budget cycle to see spending insights, pace tracking, and the monthly review. Asking someone to commit before they've experienced that felt wrong.</p>
 
 					<p>On app launch, the trial end date is loaded from Supabase and checked locally. If the trial is still active and the user hasn't purchased a subscription, they get full Family+ access. When the trial expires, they see a personalized trial-expired screen showing how much they've saved during the trial period, with a clear path to subscribe.</p>
 
 					<h3>Feature Gating</h3>
-					<p>Feature access is controlled through two computed properties on the subscription state: <code>hasEssentialsAccess</code> and <code>hasFamilyPlusAccess</code>. These cascade naturally: trial users and Family+ subscribers both have full access, Essentials subscribers have mid-tier access, and free users have basic access.</p>
+					<p>Feature access is controlled through two access levels that cascade naturally: trial users and Family+ subscribers both have full access, Essentials subscribers have mid-tier access, and free users have basic access.</p>
 
 					<p>When a free or Essentials user taps a Family+ feature, an upgrade prompt sheet appears explaining what they'll unlock and linking directly to the paywall. The prompt is non-intrusive, appearing as a bottom sheet rather than blocking navigation.</p>
 
@@ -180,7 +180,7 @@
 						<li><strong>26 edge functions</strong> handling backend logic</li>
 						<li><strong>2 Gradle modules</strong> (composeApp + dealsource)</li>
 						<li><strong>4-tab navigation</strong> with lazy composition and state preservation</li>
-						<li><strong>2 subscription tiers</strong> with 3 billing periods</li>
+						<li><strong>2 subscription tiers</strong> with monthly and yearly billing</li>
 						<li><strong>6 budget states</strong> with personalized messaging</li>
 						<li><strong>Parallel data preloading</strong> during splash for instant home screen</li>
 						<li><strong>Cross-platform</strong> from a single Kotlin codebase</li>
