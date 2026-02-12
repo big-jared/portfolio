@@ -1,0 +1,422 @@
+---
+---
+
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="viewport" content="width=device-width" />
+		<title>Building Trellis | Jared Guttromson</title>
+		<meta name="description" content="Technical documentation for Trellis, a cross-platform financial confidence app built with Kotlin Multiplatform, Supabase, and RevenueCat" />
+
+		<!-- Fonts -->
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+	</head>
+	<body>
+		<nav>
+			<div class="nav-container">
+				<a href="/" class="logo">
+					<img src="/profile.png" alt="JG" class="logo-img" />
+				</a>
+				<ul class="nav-links">
+					<li><a href="/#experience">Experience</a></li>
+					<li><a href="/#projects">Projects</a></li>
+					<li><a href="/blog">Blog</a></li>
+					<li><a href="/#contact">Contact</a></li>
+				</ul>
+			</div>
+		</nav>
+
+		<article class="blog-post">
+			<div class="container">
+				<header class="post-header">
+					<div class="post-meta">
+						<time datetime="2026-02-12">February 12, 2026</time>
+						<span class="read-time">12 min read</span>
+					</div>
+					<h1>Building Trellis: Technical Documentation</h1>
+					<p class="subtitle">A deep dive into the tech stack, architecture, and RevenueCat implementation behind Trellis, a cross-platform financial confidence app for busy families.</p>
+					<div class="tags">
+						<span class="tag">Kotlin Multiplatform</span>
+						<span class="tag">Compose</span>
+						<span class="tag">Supabase</span>
+						<span class="tag">RevenueCat</span>
+					</div>
+				</header>
+
+				<div class="post-content">
+					<h2>Overview</h2>
+					<p>Trellis is a financial confidence app that connects to your bank, builds a personalized household budget, and then actively helps you save through meal planning, shopping lists priced at real stores, local deals, pantry tracking, savings goals, and a financial agent. It runs on both Android and iOS from a single Kotlin Multiplatform codebase.</p>
+
+					<p>This post covers how it's built: the tech stack, the architecture, and the RevenueCat integration that powers the subscription model.</p>
+
+					<h2>Tech Stack</h2>
+
+					<h3>Client</h3>
+					<ul>
+						<li><strong>Kotlin Multiplatform + Compose Multiplatform</strong> - Single codebase targeting Android and iOS. JetBrains' Compose Multiplatform handles the entire UI layer, with platform-specific code only where necessary (notifications, camera, deep links).</li>
+						<li><strong>Ktor Client</strong> - HTTP networking for API calls, configured per-platform with Darwin and OkHttp engines.</li>
+						<li><strong>kotlinx-serialization</strong> - JSON parsing across the entire data layer.</li>
+						<li><strong>RevenueCat KMP SDK</strong> - Cross-platform subscription management and entitlement checking.</li>
+						<li><strong>BuildConfig</strong> - API keys and environment configuration injected at build time via a Gradle plugin.</li>
+					</ul>
+
+					<h3>Backend</h3>
+					<ul>
+						<li><strong>Supabase</strong> - The entire backend: authentication, Postgres database, edge functions, storage for bank statements and receipts, and Row Level Security for data isolation.</li>
+						<li><strong>26 Edge Functions</strong> - TypeScript/Deno functions handling everything from transaction categorization to meal suggestions to price comparison. Each function is independently deployable.</li>
+						<li><strong>OpenAI</strong> - Powers the spending analysis, meal generation, recipe parsing, nutritional analysis, wealth advice, and the financial agent.</li>
+					</ul>
+
+					<h3>Integrations</h3>
+					<ul>
+						<li><strong>Plaid</strong> - Bank account linking and transaction syncing. Users connect their bank through Plaid Link, and transactions flow into the app for categorization and budgeting.</li>
+						<li><strong>Kroger API</strong> - Real grocery pricing with location-specific results. OAuth2 client credentials flow with 30-minute token expiry.</li>
+						<li><strong>Trader Joe's</strong> - National product pricing for shopping list comparison.</li>
+						<li><strong>Firebase Cloud Messaging</strong> - Push notifications including scheduled weekly and monthly status reports.</li>
+					</ul>
+
+					<h2>Architecture</h2>
+
+					<h3>Module Structure</h3>
+					<p>The project is split into two Gradle modules:</p>
+					<ul>
+						<li><strong>composeApp</strong> - The main application module containing all UI, view models, repositories, and data sources.</li>
+						<li><strong>dealsource</strong> - A separate module handling deal aggregation across multiple retail sources. This was extracted to keep the deal-fetching logic isolated from the main app.</li>
+					</ul>
+
+					<h3>App Architecture</h3>
+					<p>Trellis uses a state holder pattern rather than traditional MVVM. Each screen has a corresponding state class that holds all the data and flags the UI needs. State is composed at the top level and flows down through the component tree.</p>
+
+					<p>The data layer follows a repository pattern: repositories abstract over Supabase calls, edge function invocations, and local caching. Edge functions are called via <code>supabase.functions.invoke()</code>, with responses deserialized through an intermediate string step due to a Supabase Kotlin SDK limitation.</p>
+
+					<h3>Navigation</h3>
+					<p>The app uses a four-tab structure managed by a <code>MainScreen</code> shell:</p>
+					<ul>
+						<li><strong>Home</strong> - Weekly spend gauge, onboarding checklist, today's meals, top deals, spending pace, upcoming recurring payments</li>
+						<li><strong>Household Budget</strong> - Interactive spending wheel, six-state budget messaging, category breakdown, saving goals and history</li>
+						<li><strong>Inside The Home</strong> - Groceries budget bar, action grid (recipes, pantry, import, meal plan), shopping list, household habits</li>
+						<li><strong>Your Home (Profile)</strong> - Family details, connected accounts, stores, budget settings</li>
+					</ul>
+
+					<p>Tabs are composed lazily (only when first visited) but kept alive after that, so switching between tabs is instant and state is preserved. The selected tab renders on top with full opacity while others are hidden via a graphics layer alpha toggle.</p>
+
+					<h3>Data Preloading</h3>
+					<p>During the splash screen, the app kicks off parallel data loads: user profile, budget data, transaction history, meal plans, deals, and subscription status all load concurrently. By the time the user sees the home screen, everything is ready.</p>
+
+					<h3>Edge Function Pattern</h3>
+					<p>All 26 edge functions follow a consistent pattern. The client sends a JSON body via Supabase's function invoke, the function authenticates using either the user's JWT or the service role key depending on context, processes the request, and returns a JSON response. Functions that need to handle both authenticated and unauthenticated requests (like the deals function which serves both logged-in users and public pricing) are deployed with <code>verify_jwt: false</code> and handle auth internally.</p>
+
+					<h2>RevenueCat Integration</h2>
+
+					<h3>Setup</h3>
+					<p>RevenueCat is initialized on app launch after the user logs in. The SDK is configured with the user's Supabase auth ID so that entitlements are tied to their account across devices.</p>
+
+					<p>We use the <a href="https://github.com/nicklama/purchases-kmp">RevenueCat KMP SDK</a> (v2.5.0), which provides a unified Kotlin API across both platforms. The SDK is configured once on startup and a delegate listens for customer info updates to keep the subscription state in sync.</p>
+
+					<h3>Subscription Tiers</h3>
+					<p>Trellis has two paid tiers, each mapped to a RevenueCat offering:</p>
+					<ul>
+						<li><strong>Essentials</strong> (RevenueCat offering: <code>default</code>) - Smart budget tracking, meal and pantry planning, local deal alerts, family teaching view. Monthly and yearly plans.</li>
+						<li><strong>Family+</strong> (RevenueCat offering: <code>family</code>) - Everything in Essentials plus meal generation and nutrition, store price comparison, unlimited connections, and enhanced budget features. Monthly, yearly, and lifetime plans.</li>
+					</ul>
+
+					<p>Each offering contains packages identified by period (<code>month</code>, <code>annual</code>, <code>lifetime</code>). On the paywall, prices are pulled directly from RevenueCat offerings so they stay in sync with App Store Connect and Google Play Console without code changes.</p>
+
+					<h3>Entitlements</h3>
+					<p>Two entitlements drive feature access:</p>
+					<ul>
+						<li><strong>Essentials entitlement</strong> - Grants access to core premium features</li>
+						<li><strong>Family+ entitlement</strong> - Grants access to everything, including AI-powered features and store comparison</li>
+					</ul>
+
+					<p>The subscription state is evaluated in a clear priority order: if the Family+ entitlement is active, the user gets Family+ access. Otherwise, if the in-house trial is still active, they get trial access (which grants Family+ level features). If the Essentials entitlement is active, they get Essentials. Otherwise, they're on the free tier.</p>
+
+					<h3>In-House Free Trial</h3>
+					<p>This is where our implementation diverges from the typical RevenueCat setup. We made a deliberate choice to manage the free trial ourselves rather than using RevenueCat's built-in trial functionality.</p>
+
+					<p>The reasoning: RevenueCat trials are tied to a specific product and start when the user subscribes. We wanted something different. When a user signs up and completes onboarding, they get the rest of the current month plus the entire next month with full Family+ access. No credit card required, no subscription commitment. The trial end date is computed as the last day of the next calendar month (sign up February 7th, trial runs through March 31st) and stored in our Supabase <code>users</code> table.</p>
+
+					<p>This gives the app time to prove its value. You need at least one full budget cycle to see spending insights, pace tracking, and the monthly review. Asking someone to commit before they've experienced that felt wrong.</p>
+
+					<p>On app launch, the trial end date is loaded from Supabase and checked locally. If the trial is still active and the user hasn't purchased a subscription, they get full Family+ access. When the trial expires, they see a personalized trial-expired screen showing how much they've saved during the trial period, with a clear path to subscribe.</p>
+
+					<h3>Feature Gating</h3>
+					<p>Feature access is controlled through two computed properties on the subscription state: <code>hasEssentialsAccess</code> and <code>hasFamilyPlusAccess</code>. These cascade naturally: trial users and Family+ subscribers both have full access, Essentials subscribers have mid-tier access, and free users have basic access.</p>
+
+					<p>When a free or Essentials user taps a Family+ feature, an upgrade prompt sheet appears explaining what they'll unlock and linking directly to the paywall. The prompt is non-intrusive, appearing as a bottom sheet rather than blocking navigation.</p>
+
+					<h3>Purchase Flow</h3>
+					<p>When a user decides to subscribe, the flow is straightforward:</p>
+					<ol>
+						<li>User selects a tier and billing period on the paywall</li>
+						<li>The app fetches the latest offerings from RevenueCat</li>
+						<li>The correct package is matched by tier (offering) and period (package identifier)</li>
+						<li>RevenueCat presents the native purchase sheet (App Store or Google Play)</li>
+						<li>On success, the customer info callback fires and the subscription state updates immediately</li>
+						<li>The paywall dismisses and the user has instant access to their new features</li>
+					</ol>
+
+					<p>Restore purchases is also wired through RevenueCat, handling the case where a user reinstalls the app or switches devices.</p>
+
+					<h3>Developer Tools</h3>
+					<p>For testing, the app includes a developer override system that can force any subscription state without touching RevenueCat. This was essential during development for testing all four states (Free, Trial, Essentials, Family+) and verifying that feature gating, the trial-expired flow, and the paywall all behave correctly. The override can be cleared at any time to restore the real subscription state.</p>
+
+					<h2>Key Technical Decisions</h2>
+
+					<h3>Why Kotlin Multiplatform</h3>
+					<p>A single codebase for both platforms meant we could build more features in less time. Compose Multiplatform handled the UI, and the few platform-specific pieces (camera, notifications, deep links) were isolated with expect/actual declarations. The result is a fully native experience on both platforms with shared business logic, data layer, and UI.</p>
+
+					<h3>Why Supabase</h3>
+					<p>Supabase gave us auth, database, edge functions, and storage in one platform. The edge functions are particularly important: they run the OpenAI calls, the Kroger API integration, the price comparison algorithm, and the transaction categorization. Moving this logic server-side keeps API keys secure and lets us iterate on the backend without shipping app updates.</p>
+
+					<h3>Why In-House Trials</h3>
+					<p>RevenueCat's trial system is built around subscription products. You start a trial, and if you don't cancel, it converts to a paid subscription. We wanted a different model: give users full access for free, let them experience the value, and then ask them to subscribe. No credit card upfront, no auto-conversion. This required managing trial state ourselves, but the result is a trial that actually gives users enough time to see the impact of the app on their finances.</p>
+
+					<h2>Infrastructure at a Glance</h2>
+					<ul>
+						<li><strong>26 edge functions</strong> handling backend logic</li>
+						<li><strong>2 Gradle modules</strong> (composeApp + dealsource)</li>
+						<li><strong>4-tab navigation</strong> with lazy composition and state preservation</li>
+						<li><strong>2 subscription tiers</strong> with 3 billing periods</li>
+						<li><strong>6 budget states</strong> with personalized messaging</li>
+						<li><strong>Parallel data preloading</strong> during splash for instant home screen</li>
+						<li><strong>Cross-platform</strong> from a single Kotlin codebase</li>
+					</ul>
+				</div>
+
+				<footer class="post-footer">
+					<a href="/blog" class="back-link">← Back to Blog</a>
+				</footer>
+			</div>
+		</article>
+
+		<style>
+			* {
+				margin: 0;
+				padding: 0;
+				box-sizing: border-box;
+			}
+
+			:root {
+				--primary: #2563eb;
+				--primary-dark: #1e40af;
+				--text: #1e293b;
+				--text-light: #64748b;
+				--bg: #ffffff;
+				--bg-secondary: #f8fafc;
+				--border: #e2e8f0;
+			}
+
+			body {
+				font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+				line-height: 1.6;
+				color: var(--text);
+				background: var(--bg);
+			}
+
+			.container {
+				max-width: 800px;
+				margin: 0 auto;
+				padding: 0 2rem;
+			}
+
+			nav {
+				position: sticky;
+				top: 0;
+				background: rgba(255, 255, 255, 0.9);
+				backdrop-filter: blur(10px);
+				border-bottom: 1px solid var(--border);
+				z-index: 100;
+			}
+
+			.nav-container {
+				max-width: 1100px;
+				margin: 0 auto;
+				padding: 1.5rem 2rem;
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+			}
+
+			.logo {
+				display: flex;
+				align-items: center;
+				text-decoration: none;
+			}
+
+			.logo-img {
+				width: 40px;
+				height: 40px;
+				border-radius: 50%;
+				object-fit: cover;
+			}
+
+			.nav-links {
+				display: flex;
+				list-style: none;
+				gap: 2rem;
+			}
+
+			.nav-links a {
+				color: var(--text);
+				text-decoration: none;
+				font-weight: 500;
+				transition: color 0.3s;
+			}
+
+			.nav-links a:hover {
+				color: var(--primary);
+			}
+
+			.blog-post {
+				padding: 3rem 0;
+			}
+
+			.post-header {
+				margin-bottom: 3rem;
+				padding-bottom: 2rem;
+				border-bottom: 1px solid var(--border);
+			}
+
+			.post-meta {
+				display: flex;
+				gap: 1rem;
+				margin-bottom: 1rem;
+				font-size: 0.9rem;
+				color: var(--text-light);
+			}
+
+			.post-header h1 {
+				font-size: 2.5rem;
+				font-weight: 800;
+				margin-bottom: 1rem;
+				line-height: 1.2;
+			}
+
+			.subtitle {
+				font-size: 1.1rem;
+				color: var(--text-light);
+				margin-bottom: 1.5rem;
+				line-height: 1.7;
+			}
+
+			.tags {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.5rem;
+			}
+
+			.tag {
+				background: var(--bg-secondary);
+				color: var(--text);
+				padding: 0.25rem 0.75rem;
+				border-radius: 1rem;
+				font-size: 0.85rem;
+				border: 1px solid var(--border);
+			}
+
+			.post-content {
+				font-size: 1.1rem;
+				line-height: 1.8;
+			}
+
+			.post-content h2 {
+				font-size: 1.75rem;
+				font-weight: 700;
+				margin: 2.5rem 0 1rem;
+			}
+
+			.post-content h2:first-child {
+				margin-top: 0;
+			}
+
+			.post-content h3 {
+				font-size: 1.4rem;
+				font-weight: 600;
+				margin: 2rem 0 0.75rem;
+			}
+
+			.post-content p {
+				margin-bottom: 1.5rem;
+			}
+
+			.post-content ul, .post-content ol {
+				margin: 1.5rem 0;
+				padding-left: 2rem;
+			}
+
+			.post-content li {
+				margin-bottom: 0.75rem;
+			}
+
+			.post-content code {
+				background: var(--bg-secondary);
+				padding: 0.2rem 0.4rem;
+				border-radius: 0.25rem;
+				font-family: 'Courier New', monospace;
+				font-size: 0.9em;
+			}
+
+			.post-content a {
+				color: var(--primary);
+				text-decoration: none;
+			}
+
+			.post-content a:hover {
+				text-decoration: underline;
+			}
+
+			.blog-image {
+				width: 100%;
+				max-width: 500px;
+				height: auto;
+				border-radius: 0.5rem;
+				margin: 2rem auto;
+				display: block;
+				box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+				border: 1px solid var(--border);
+			}
+
+			.desktop-image {
+				max-width: 700px;
+			}
+
+			.post-footer {
+				margin-top: 4rem;
+				padding-top: 2rem;
+				border-top: 1px solid var(--border);
+			}
+
+			.back-link {
+				color: var(--primary);
+				text-decoration: none;
+				font-weight: 500;
+			}
+
+			.back-link:hover {
+				text-decoration: underline;
+			}
+
+			@media (max-width: 768px) {
+				.post-header h1 {
+					font-size: 2rem;
+				}
+
+				.post-content {
+					font-size: 1rem;
+				}
+
+				.post-content h2 {
+					font-size: 1.5rem;
+				}
+
+				.post-content h3 {
+					font-size: 1.25rem;
+				}
+			}
+		</style>
+	</body>
+</html>
