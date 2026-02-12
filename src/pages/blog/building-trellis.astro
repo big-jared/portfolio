@@ -148,6 +148,16 @@
 
 					<p>When a free or Essentials user taps a Family+ feature, an upgrade prompt sheet appears explaining what they'll unlock and linking directly to the paywall. The prompt is non-intrusive, appearing as a bottom sheet rather than blocking navigation.</p>
 
+					<h3>Developer Mode</h3>
+					<p>To test feature gating in isolation, the app includes a developer mode that can override the subscription state on the fly. This lets us simulate every user scenario without needing real purchases or waiting for trials to expire. The available states:</p>
+					<ul>
+						<li><strong>Free</strong> - Trial expired, no subscription. Basic access only, upgrade prompts on premium features.</li>
+						<li><strong>Trial</strong> - Active free trial with full Family+ access. The default state for new users.</li>
+						<li><strong>Essentials</strong> - Paid subscriber with mid-tier access. Budget tracking, meal planning, deal alerts, family teaching view.</li>
+						<li><strong>Family+</strong> - Full access. Meal generation, nutrition tracking, store price comparison, unlimited connections.</li>
+					</ul>
+					<p>Each state can be toggled instantly and cleared to restore the real subscription state from RevenueCat. This was essential for verifying that the paywall, feature gating, trial-expired flow, and upgrade prompts all behave correctly across every scenario.</p>
+
 					<h3>Purchase Flow</h3>
 					<p>When a user decides to subscribe, the flow is straightforward:</p>
 					<ol>
@@ -161,13 +171,13 @@
 
 					<p>Restore purchases is also wired through RevenueCat, handling the case where a user reinstalls the app or switches devices.</p>
 
-					<h3>Developer Tools</h3>
-					<p>For testing, the app includes a developer override system that can force any subscription state without touching RevenueCat. This was essential during development for testing all four states (Free, Trial, Essentials, Family+) and verifying that feature gating, the trial-expired flow, and the paywall all behave correctly. The override can be cleared at any time to restore the real subscription state.</p>
-
 					<h2>Key Technical Decisions</h2>
 
 					<h3>Why Kotlin Multiplatform</h3>
-					<p>A single codebase for both platforms meant we could build more features in less time. Compose Multiplatform handled the UI, and the few platform-specific pieces (camera, notifications, deep links) were isolated with expect/actual declarations. The result is a fully native experience on both platforms with shared business logic, data layer, and UI.</p>
+					<p>A single codebase for both platforms meant we could build more features in less time. Kotlin compiles to native code on iOS (no JavaScript bridge), so you get real native performance with full type safety from a mature language. Compose Multiplatform handled the UI, and the few platform-specific pieces (camera, notifications, deep links) were isolated with expect/actual declarations. The result is a fully native experience on both platforms with shared business logic, data layer, and UI.</p>
+
+					<h3>Why Compose Multiplatform</h3>
+					<p>Compose Multiplatform lets you share the UI layer across platforms, not just the business logic. That means every screen, every animation, every component is written once and runs on both Android and iOS. It's declarative, so the UI is a function of state, which makes complex interactive elements like the spending wheel and drag-and-drop recipe management much easier to reason about. And because it's built on top of Jetpack Compose, the Android ecosystem's investment in tooling and documentation carries over directly.</p>
 
 					<h3>Why Supabase</h3>
 					<p>Supabase gave us auth, database, edge functions, and storage in one platform. The edge functions are particularly important: they run the OpenAI calls, the Kroger API integration, the price comparison algorithm, and the transaction categorization. Moving this logic server-side keeps API keys secure and lets us iterate on the backend without shipping app updates.</p>
@@ -181,8 +191,9 @@
 						<li><strong>2 Gradle modules</strong> (composeApp + dealsource)</li>
 						<li><strong>4-tab navigation</strong> with lazy composition and state preservation</li>
 						<li><strong>2 subscription tiers</strong> with monthly and yearly billing</li>
-						<li><strong>6 budget states</strong> with personalized messaging</li>
+						<li><strong>Personalized budget messaging</strong> that adapts to your financial situation</li>
 						<li><strong>Parallel data preloading</strong> during splash for instant home screen</li>
+						<li><strong>~32,000 lines of code</strong> across Kotlin and TypeScript</li>
 						<li><strong>Cross-platform</strong> from a single Kotlin codebase</li>
 					</ul>
 				</div>
