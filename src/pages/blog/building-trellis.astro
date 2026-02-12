@@ -182,6 +182,9 @@
 					<h3>Why Supabase</h3>
 					<p>Supabase gave us auth, database, edge functions, and storage in one platform. The edge functions are particularly important: they run the OpenAI calls, the Kroger API integration, the price comparison algorithm, and the transaction categorization. Moving this logic server-side keeps API keys secure and lets us iterate on the backend without shipping app updates.</p>
 
+					<h3>Why iOS First</h3>
+					<p>It might seem counterintuitive to launch on iOS first with a Compose Multiplatform app, since Compose is Android-native technology. Two reasons. First, the target audience skews toward iOS. Second, Compose Multiplatform for iOS has matured significantly, and shipping on the harder platform first means Android support comes with less risk, not more. Plus, it's what we had in our pockets.</p>
+
 					<h3>Why In-House Trials</h3>
 					<p>RevenueCat's trial system is built around subscription products. You start a trial, and if you don't cancel, it converts to a paid subscription. We wanted a different model: give users full access for free, let them experience the value, and then ask them to subscribe. No credit card upfront, no auto-conversion. This required managing trial state ourselves, but the result is a trial that actually gives users enough time to see the impact of the app on their finances.</p>
 
