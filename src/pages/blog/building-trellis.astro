@@ -48,6 +48,24 @@
 
 				<div class="post-content">
 					<h2>Overview</h2>
+					<div class="tab-grid">
+						<figure class="tab-figure">
+							<img src="/blog/trellis/home-green.png" alt="Home tab" />
+							<figcaption>Home</figcaption>
+						</figure>
+						<figure class="tab-figure">
+							<img src="/blog/trellis/spending-wheel.png" alt="Household Budget tab" />
+							<figcaption>Household Budget</figcaption>
+						</figure>
+						<figure class="tab-figure">
+							<img src="/blog/trellis/inside-the-home.png" alt="Inside The Home tab" />
+							<figcaption>Inside The Home</figcaption>
+						</figure>
+						<figure class="tab-figure">
+							<img src="/blog/trellis/profile.png" alt="Your Home tab" />
+							<figcaption>Your Home</figcaption>
+						</figure>
+					</div>
 					<p>Trellis is a financial confidence app that connects to your bank, builds a personalized household budget, and then actively helps you save through meal planning, shopping lists priced at real stores, local deals, pantry tracking, savings goals, and a financial agent. It runs on both Android and iOS from a single Kotlin Multiplatform codebase.</p>
 
 					<p>This post covers how it's built: the tech stack, the architecture, and the RevenueCat integration that powers the subscription model.</p>
@@ -527,6 +545,33 @@
 
 			.post-content a:hover {
 				text-decoration: underline;
+			}
+
+			.tab-grid {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 1rem;
+				margin: 1.5rem 0 2rem;
+			}
+
+			.tab-figure {
+				margin: 0;
+				text-align: center;
+			}
+
+			.tab-figure img {
+				width: 100%;
+				height: auto;
+				border-radius: 0.5rem;
+				box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+				border: 1px solid var(--border);
+			}
+
+			.tab-figure figcaption {
+				margin-top: 0.5rem;
+				font-size: 0.85rem;
+				color: var(--text-light);
+				font-weight: 500;
 			}
 
 			.blog-image {
