@@ -52,6 +52,124 @@
 
 					<p>This post covers how it's built: the tech stack, the architecture, and the RevenueCat integration that powers the subscription model.</p>
 
+					<h2>How It Works</h2>
+
+					<h3>Budgeting</h3>
+					<p>When a user connects their bank through Plaid, transactions sync and get classified into nine budget categories: Housing, Utilities, Groceries, Eating Out, Kids, Transport, Fun, Subscriptions, and Health. Classification follows a three-step hierarchy. First, Plaid's own category codes get remapped (over 40 explicit mappings, like <code>FOOD_AND_DRINK:FOOD_AND_DRINK_GROCERIES</code> to Groceries, or anything with "SUBSCRIPTION" in the name to Subscriptions). Second, user-defined category rules override by merchant name, so if you categorize "Target" as Groceries once, it stays that way. Third, anything still unmapped gets sent to AI for classification with strict category enforcement.</p>
+
+					<table class="mapping-table">
+						<thead>
+							<tr>
+								<th>Plaid Category</th>
+								<th>Trellis Category</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr><td>FOOD_AND_DRINK: GROCERIES</td><td>Groceries</td></tr>
+							<tr><td>FOOD_AND_DRINK: RESTAURANT, FAST_FOOD, COFFEE, BAR</td><td>Eating Out</td></tr>
+							<tr><td>RENT_AND_UTILITIES: RENT, MORTGAGE</td><td>Housing</td></tr>
+							<tr><td>RENT_AND_UTILITIES: ELECTRIC, GAS, WATER, INTERNET</td><td>Utilities</td></tr>
+							<tr><td>TRANSPORTATION: GAS, PARKING, TOLLS, PUBLIC_TRANSIT</td><td>Transport</td></tr>
+							<tr><td>GENERAL_SERVICES: CHILDCARE, EDUCATION</td><td>Kids</td></tr>
+							<tr><td>ENTERTAINMENT, RECREATION, TRAVEL</td><td>Fun</td></tr>
+							<tr><td>MEDICAL, PERSONAL_CARE</td><td>Health</td></tr>
+							<tr><td>Any with "SUBSCRIPTION" in name</td><td>Subscriptions</td></tr>
+						</tbody>
+					</table>
+
+					<p>Once transactions are categorized, the budget generation algorithm takes the user's income, location, and household size and builds a personalized budget. Spending is annualized to monthly, then compared against regional averages by state sourced from USDA moderate-cost plan and BLS data. The system knows that groceries average $850/month in Texas but $1,000 in California, and adjusts recommendations accordingly.</p>
+
+					<p>The algorithm prioritizes cuts by category weight. Eating out and entertainment carry a 3x weight, meaning they get reduced first. Transport is 1.5x. Groceries and kids carry lower weights and only get touched if spending is significantly above the regional floor. Every suggested target has a minimum, so the app never recommends an unrealistic grocery budget just to make the numbers work. If the user's income is below their total spending, the system allocates cuts across categories using these weights until the budget balances.</p>
+
+					<p>From there, the weekly spend gauge on the home screen takes the variable portion of the budget (everything except housing, utilities, and subscriptions), divides it across weeks remaining in the month, and shows exactly what's safe to spend. It tracks pace within the current week too: if it's Wednesday and you've already spent more than 3/7ths of your weekly budget, the gauge turns red.</p>
+
+					<img src="/blog/trellis/home-green.png" alt="Home screen showing green weekly spend gauge with $165 safe to spend" class="blog-image" />
+
+					<img src="/blog/trellis/home-over-budget.png" alt="Home screen showing red gauge when over budget, with weekly spending breakdown" class="blog-image" />
+
+					<h3>Meal Planning and Generation</h3>
+					<p>Before generating meals, users walk through a multi-step preference setup: food likes, allergies, meal goal (quick, budget, high protein, etc.), kids' pickiness level and favorite foods, cooking time, which meal slots they want (breakfast, lunch, dinner, snack, treat), and what to optimize for. All of these get packed into a structured request alongside the remaining grocery budget, family size, kids' ages, and current pantry inventory.</p>
+
+					<p>The edge function parses these preferences and builds a focused AI prompt with strict constraints. Allergies are highest priority. Then cooking time, meal goal, and optimization preferences shape the recipe style. If the user has pantry items, those ingredients come back priced at zero. Every recipe is portioned to the exact family size, and prices are estimated conservatively (rounded up so checkout doesn't surprise you).</p>
+
+					<p>When the request includes multiple meal types (say three breakfasts and four dinners), the function splits them into parallel calls, one per type, each with its own focused prompt. Results are merged back together. If any type fails, it falls back to hardcoded recipes for that type while the others still come through.</p>
+
+					<p>Users can also import recipes three ways. URL import fetches the webpage, strips HTML, and sends the extracted text to AI for structured parsing. Photo import sends the image to GPT-4o's vision API, which can read handwritten recipes, photos of dishes, or menu items. And manual creation lets you build from scratch. All three produce the same structured recipe format with ingredients, steps, nutrition, and estimated pricing.</p>
+
+					<p>Nutrition is calculated separately using the USDA FoodData Central API. Each ingredient is normalized, looked up against the USDA database, converted to grams using ingredient-specific density tables (a cup of flour is 125g, a cup of milk is 244g, an egg is 50g), and the per-serving macros are calculated from there. The app tracks a confidence score based on how many ingredients were successfully mapped and flags anything it couldn't find.</p>
+
+					<p>Once meals are generated or imported, users drag and drop them onto a weekly calendar using per-day, per-slot planning. Servings can be overridden per instance without changing the stored recipe, and the shopping list scales ingredient quantities accordingly.</p>
+
+					<img src="/blog/trellis/meal-plan.png" alt="Weekly meal plan calendar with drag-and-drop meal placement" class="blog-image" />
+
+					<img src="/blog/trellis/nutrition.png" alt="Nutrition details bottom sheet showing macros and per-meal calorie breakdown" class="blog-image" />
+
+					<h3>Shopping List</h3>
+					<p>The shopping list is the connective tissue between meal planning, pantry, deals, and store pricing. It pulls from multiple sources: auto-generated from your meal plan, manually added items, and deals saved directly from the deals screen.</p>
+
+					<p>When generating from meals, the app extracts every ingredient across the week's planned recipes and combines them intelligently. If Monday's pasta and Wednesday's stir fry both call for garlic, you get one entry with the combined amount. You can also add items manually or save deals directly from the deals screen.</p>
+
+					<p>Before the list is finalized, it diffs against your pantry. The system converts between units to check if you already have enough of each item. If a recipe calls for 2 cups of flour and your pantry shows 5 cups, it stays off the list. Only what you're actually missing makes the cut.</p>
+
+					<p>From the deals screen, users can save deals directly to their shopping list with a tap. This means your weekly deals and your meal-generated groceries live in the same list, organized by store.</p>
+
+					<p>When you're ready to shop, the price comparison feature takes your full list and prices every item across your connected stores. Kroger has a public API that returns location-specific pricing for your nearest store, which works well. Trader Joe's doesn't have a public API, so we're managing a hardcoded product catalog on the backend with national pricing. Finding APIs that give real in-store prices is surprisingly hard. Most grocery chains don't expose pricing publicly, and the ones that do often limit it to loyalty program data. For now, Kroger and our Trader Joe's catalog cover the two most common stores, and we're looking to expand as more retailers open up their data.</p>
+
+					<p>The system calculates per-store totals, identifies the best price for each item, and computes an optimal split showing exactly what to buy where to spend the least overall. You can also assign items to specific stores manually if you have a preference.</p>
+
+					<img src="/blog/trellis/shopping-list.png" alt="Shopping list organized by category with estimated prices" class="blog-image" />
+
+					<img src="/blog/trellis/compare-prices.png" alt="Price comparison showing per-store totals and optimal split across Fred Meyer and Trader Joe's" class="blog-image" />
+
+					<h3>Pantry</h3>
+					<p>The pantry tracks what you have at home and knows whether each item is reserved for a planned meal or available to use freely. When you're looking at your pantry, you can see at a glance what's spoken for and what's up for grabs. From the unplanned items, you can generate meal suggestions that prioritize using what you already have before buying anything new.</p>
+
+					<p>When you mark a recipe as cooked, the pantry automatically removes the ingredients that were used. This keeps inventory in sync without manual tracking, so the next time you generate a shopping list, it knows exactly what you have left.</p>
+
+					<p>The technical challenge here is matching. A recipe might call for "2 cups all-purpose flour" while your pantry has "King Arthur Flour, 5 lb bag." Those need to be recognized as the same thing. The system normalizes ingredient names by stripping brand names, descriptors, and qualifiers, then converts between units using ingredient-specific density tables. A pound of flour and cups of flour are comparable because the system knows how dense flour is. Getting this right across hundreds of possible ingredients, unit types, and naming conventions is an ongoing problem, and it's certainly not perfect yet. But even imperfect matching makes the pantry-to-shopping-list flow meaningfully better than starting from scratch every week.</p>
+
+					<p>Another unsolved problem is quantity tracking. When you use 2 cups of flour from a 5 lb bag, the pantry needs to know you have roughly 3.5 lbs left. Right now, marking a recipe as cooked removes the ingredient entirely. Partial deduction and knowing when to suggest restocking is something we haven't cracked yet. It requires reliable unit conversion in both directions, tracking fractional quantities across multiple uses, and deciding when "almost out" means "add to shopping list." It's on the roadmap.</p>
+
+					<img src="/blog/trellis/pantry.png" alt="Pantry screen showing planned ingredients organized by category" class="blog-image" />
+
+					<h3>Deals</h3>
+					<p>Deals are sourced from the Kroger API using location-specific product searches. Each deal category (groceries, baby and kids, household essentials, etc.) maps to a curated set of search terms. The API returns products with regular and promotional prices, and only products with a real discount make the cut. The app calculates the savings percentage, and anything at 20% off or more gets flagged as a hot deal. Above 40% is marked as amazing. Deals are sorted by savings percentage by default, with options to sort by price or recency. The top 3 surface on the home screen, with the top 5 hot deals featured on the full deals screen. Users can add deals directly to their shopping list.</p>
+
+					<img src="/blog/trellis/deals.png" alt="Deals screen showing hot deals and category-filtered deal listings" class="blog-image" />
+
+					<h3>Deal Alerts</h3>
+					<p>Users set the categories they care about and optional keyword alerts. Deals matching their preferences show up automatically and trigger notifications when new matches are found.</p>
+
+					<p>A daily cron runs at noon EST, fetching fresh deals for zip codes with active users. Ideally this would run per zip code on a tighter interval, but that doesn't scale. Every zip code means a separate set of API calls to Kroger for location-specific pricing, and running that across thousands of zip codes every few hours adds up fast. Right now, only zips with active users get queried, which keeps the volume reasonable. Scaling this to a national user base will require real infrastructure planning around caching, batching, and figuring out how aggressively we can hit retailer APIs without getting rate-limited.</p>
+
+					<img src="/blog/trellis/deal-alerts.png" alt="Deal Alerts screen with keyword search, popular suggestions, and matched deals" class="blog-image" />
+
+					<h3>Savings and Wealth</h3>
+					<p>Trellis supports six goal types: emergency fund, vacation, college fund, retirement, big purchase, and custom. Each has its own treatment. Retirement is the most involved: you enter your current age and retirement age, and the app computes the timeline and leaves the target amount open-ended since it depends on planning that happens after creation.</p>
+
+					<p>The savings overview screen splits into two paths based on the user's projected monthly savings. Users saving more than $500/month see wealth-building content: Roth IRAs, retirement planning with employer match guidance, stock portfolio basics with index fund recommendations, and a 10-year compound growth projection comparing savings-only vs invested returns. Users with less room see a different experience focused on building a safety net: emergency fund milestones ($500 for a car repair, $1,000 for a medical bill, up to two months of expenses), tips for finding small savings, and a check for state assistance programs like SNAP, WIC, Medicaid, and utility assistance based on household size and income relative to the federal poverty line.</p>
+
+					<p>Monthly wealth advice is generated per user and cached for the month. The system gathers the user's income, spending history, existing goals, and location, then generates personalized recommendations. Low-savings users get emergency fund guidance with concrete steps. Higher-savings users get advice on compound interest, tax-advantaged accounts, and balancing goal contributions with retirement savings.</p>
+
+					<p>The financial agent takes this further with an interactive chat. Each conversation gets its own thread, and the agent has access to the user's last 60 days of transactions, category spending breakdowns, merchant details, and their latest spending report. It can reference real numbers from their account. Ask "where am I overspending?" and it'll pull your actual merchant data and give a specific answer. The tone is warm and concise: 2-4 sentences, one actionable takeaway, no essays.</p>
+
+					<p>Every wealth topic (emergency funds, Roth IRAs, retirement, investing, state resources) has a detailed info sheet with an "Ask questions" button that drops you into the agent with that topic as context, so the conversation starts relevant.</p>
+
+					<img src="/blog/trellis/savings.png" alt="Build Wealth screen with 10-year investment projection and wealth topic list" class="blog-image" />
+
+					<h2>The Spending Wheel</h2>
+					<p>The budget screen's centerpiece is an interactive spending wheel built entirely with Compose's Canvas API. Each category gets a petal-shaped segment sized proportionally to its budget allocation, with a 12% minimum so even small categories stay tappable and readable. The segments are drawn as curved arc paths with quadratic bezier rounded corners, giving them a soft petal shape rather than sharp pie slices.</p>
+
+					<p>Each petal has two layers. The background layer renders at 50% opacity showing the full budget allocation. On top of that, a filled layer is clipped to a pie slice representing how much of that category's budget has been spent. So at a glance, you can see both the relative size of each budget category and how far through it you are.</p>
+
+					<p>Touch detection uses polar coordinate math. When you tap, the app calculates the distance from center (are you in the ring?) and the angle via atan2 (which segment are you on?), with wrapping logic for segments that cross the -180/180 degree boundary. Tapping a segment highlights it with a stroke border, fills the center circle with that category's color, and swaps the center text to show how much is left in that category. Tapping again deselects.</p>
+
+					<p>The entrance animation eases all segments from 0 to their full sweep angle over 800ms. Category icons are positioned at the midpoint of each arc using trigonometry and fade in at 50% progress. Each category has its own color and icon: green apple for groceries, blue fork for eating out, orange car for transport, rubber duck for fun, and so on.</p>
+
+					<img src="/blog/trellis/spending-wheel.png" alt="Household Budget screen with interactive spending wheel and category breakdown" class="blog-image" />
+
+					<img src="/blog/trellis/spending-overview.png" alt="Spending Overview with pace-by-month chart and per-category spending trends" class="blog-image" />
+
 					<h2>Tech Stack</h2>
 
 					<h3>Client</h3>
@@ -93,7 +211,9 @@
 					<p>The data layer follows a repository pattern: repositories abstract over Supabase calls, edge function invocations, and local caching.</p>
 
 					<h3>Navigation</h3>
-					<p>The app uses a four-tab structure:</p>
+					<p>Navigation is built on Compose Navigation with type-safe routes. All 66 routes are defined as a sealed interface using kotlinx-serialization, so every navigation call is compile-time checked with typed arguments (no string-based routing). The app uses two nav graphs: a root graph with 59 composable destinations covering the full app, and a nested onboarding graph with 10 steps.</p>
+
+					<p>The root graph covers four tabs plus every screen reachable from them:</p>
 					<ul>
 						<li><strong>Home</strong> - Weekly spend gauge, onboarding checklist, today's meals, top deals, spending pace, upcoming recurring payments</li>
 						<li><strong>Household Budget</strong> - Interactive spending wheel, six-state budget messaging, category breakdown, saving goals and history</li>
@@ -114,7 +234,7 @@
 					<h3>Setup</h3>
 					<p>RevenueCat is initialized on app launch after the user logs in. The SDK is configured with the user's Supabase auth ID so that entitlements are tied to their account across devices.</p>
 
-					<p>We use the <a href="https://github.com/nicklama/purchases-kmp">RevenueCat KMP SDK</a> (v2.5.0), which provides a unified Kotlin API across both platforms. The SDK is configured once on startup and a delegate listens for customer info updates to keep the subscription state in sync.</p>
+					<p>We use the <a href="https://github.com/RevenueCat/purchases-kmp">RevenueCat KMP SDK</a> (v2.5.0), which provides a unified Kotlin API across both platforms. The SDK is configured once on startup and a delegate listens for customer info updates to keep the subscription state in sync.</p>
 
 					<h3>Subscription Tiers</h3>
 					<p>Trellis has two paid tiers, each mapped to its own RevenueCat offering:</p>
@@ -190,7 +310,9 @@
 
 					<h2>Infrastructure at a Glance</h2>
 					<ul>
+						<li><strong>90+ screens</strong> including bottom sheets and modals</li>
 						<li><strong>26 edge functions</strong> handling backend logic</li>
+						<li><strong>10 unique AI prompts</strong> powering spending analysis, meal generation, recipe parsing, wealth advice, and more</li>
 						<li><strong>2 Gradle modules</strong> (composeApp + dealsource)</li>
 						<li><strong>4-tab navigation</strong> with lazy composition and state preservation</li>
 						<li><strong>2 subscription tiers</strong> with monthly and yearly billing</li>
@@ -374,6 +496,30 @@
 				font-size: 0.9em;
 			}
 
+			.mapping-table {
+				width: 100%;
+				border-collapse: collapse;
+				margin: 1.5rem 0;
+				font-size: 0.95rem;
+			}
+
+			.mapping-table th {
+				text-align: left;
+				padding: 0.75rem 1rem;
+				background: var(--bg-secondary);
+				border: 1px solid var(--border);
+				font-weight: 600;
+			}
+
+			.mapping-table td {
+				padding: 0.6rem 1rem;
+				border: 1px solid var(--border);
+			}
+
+			.mapping-table tbody tr:hover {
+				background: var(--bg-secondary);
+			}
+
 			.post-content a {
 				color: var(--primary);
 				text-decoration: none;
@@ -415,6 +561,20 @@
 			}
 
 			@media (max-width: 768px) {
+				.logo-img {
+					width: 32px;
+					height: 32px;
+				}
+
+				.nav-container {
+					padding: 1rem;
+				}
+
+				.nav-links {
+					gap: 1rem;
+					font-size: 0.9rem;
+				}
+
 				.post-header h1 {
 					font-size: 2rem;
 				}
