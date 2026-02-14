@@ -73,7 +73,7 @@
 					<h2>How It Works</h2>
 
 					<h3>Budgeting</h3>
-					<p>When a user connects their bank through Plaid, transactions sync and get classified into nine budget categories: Housing, Utilities, Groceries, Eating Out, Kids, Transport, Fun, Subscriptions, and Health. Classification follows a three-step hierarchy. First, Plaid's own category codes get remapped (over 40 explicit mappings, like <code>FOOD_AND_DRINK:FOOD_AND_DRINK_GROCERIES</code> to Groceries, or anything with "SUBSCRIPTION" in the name to Subscriptions). Second, user-defined category rules override by merchant name, so if you categorize "Target" as Groceries once, it stays that way. Third, anything still unmapped gets sent to AI for classification with strict category enforcement.</p>
+					<p>When a user connects their bank through Plaid, transactions sync and get classified into nine budget categories: Housing, Utilities, Groceries, Eating Out, Kids, Transport, Fun, Subscriptions, and Health. Classification follows a multi-step pipeline. First, merchant overrides handle known edge cases where Plaid miscategorizes (utility companies coded as general services, for example). Then Plaid's detailed category codes get remapped through over 40 explicit mappings, like <code>FOOD_AND_DRINK:FOOD_AND_DRINK_GROCERIES</code> to Groceries. If the detailed code doesn't match, a broader primary category map catches the rest. User-defined category rules take priority over all of these: if you recategorize "Target" as Groceries once, it stays that way. For anything still unmapped, a keyword matching step checks the transaction description for patterns like "SUBSCRIPTION", "INSURANCE", or specific merchant names. Finally, anything that makes it through all of these gets sent to AI for classification with strict category enforcement.</p>
 
 					<table class="mapping-table">
 						<thead>
@@ -95,7 +95,9 @@
 						</tbody>
 					</table>
 
-					<p>Once transactions are categorized, the budget generation algorithm takes the user's income, location, and household size and builds a personalized budget. Spending is annualized to monthly, then compared against regional averages by state sourced from USDA moderate-cost plan and BLS data. The system knows that groceries average $850/month in Texas but $1,000 in California, and adjusts recommendations accordingly.</p>
+					<p>Once transactions are categorized, the budget generation algorithm takes the user's income, location, and household size and builds a personalized budget. Spending is annualized to monthly, then compared against regional averages sourced from a cost-of-living database covering all 50 states with metro-area granularity where available. Food costs are scaled using USDA moderate-cost food plan multipliers: +80% per additional adult, +50% per child, +35% per infant, then split 70/30 into groceries and eating out based on BLS consumer expenditure data. Childcare estimates pull from state-level data, and transport scales by household size.</p>
+
+					<p>For essential categories where the user has zero transactions on their linked accounts (groceries paid with cash, rent via bank transfer, etc.), the system injects regional estimates as phantom categories. These show up in the budget with an "Estimated" label and explanation, so the user knows the number is a placeholder based on their area rather than tracked spending. This prevents the common problem of a $0 grocery budget for someone who just happens to buy groceries with a different card.</p>
 
 					<p>The algorithm prioritizes cuts by category weight. Eating out and entertainment carry a 3x weight, meaning they get reduced first. Transport is 1.5x. Groceries and kids carry lower weights and only get touched if spending is significantly above the regional floor. Every suggested target has a minimum, so the app never recommends an unrealistic grocery budget just to make the numbers work. If the user's income is below their total spending, the system allocates cuts across categories using these weights until the budget balances.</p>
 
@@ -208,7 +210,7 @@
 
 					<h3>Integrations</h3>
 					<ul>
-						<li><strong>Plaid</strong> - Bank account linking and transaction syncing. Users connect their bank through Plaid Link, and transactions flow into the app for categorization and budgeting.</li>
+						<li><strong>Plaid</strong> - Bank account linking and transaction syncing via webhooks. Users connect their bank through Plaid Link, and ongoing transaction updates are pushed via webhooks that delegate to the sync function, ensuring every transaction goes through the full categorization pipeline.</li>
 						<li><strong>Kroger API</strong> - Real grocery pricing with location-specific results. OAuth2 client credentials flow with 30-minute token expiry.</li>
 						<li><strong>Trader Joe's</strong> - National product pricing for shopping list comparison.</li>
 						<li><strong>Firebase Cloud Messaging</strong> - Push notifications including scheduled weekly and monthly status reports.</li>
@@ -245,7 +247,7 @@
 					<p>During the splash screen, the app kicks off parallel data loads: user profile, budget data, transaction history, meal plans, deals, and subscription status all load concurrently. By the time the user sees the home screen, everything is ready.</p>
 
 					<h3>Edge Function Pattern</h3>
-					<p>All 26 edge functions follow a consistent pattern. The client sends a JSON request, the function authenticates and processes it, and returns a JSON response. Functions that need to handle both authenticated and unauthenticated requests handle auth internally.</p>
+					<p>All 26 edge functions follow a consistent pattern. The client sends a JSON request, the function authenticates and processes it, and returns a JSON response. Several functions support dual authentication: user JWT for app calls and service-role key for server-to-server calls (webhooks, crons, function-to-function delegation). This pattern lets a Plaid webhook trigger a transaction sync using the same edge function the app calls directly, without duplicating categorization logic. Functions using dual auth are deployed with JWT verification disabled at the gateway so they can handle auth internally.</p>
 
 					<h2>RevenueCat Integration</h2>
 
